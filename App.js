@@ -171,13 +171,136 @@ export default function App() {
             <Text style={styles.greeting}>Hello,</Text>
             <Text style={styles.userName}>{name || 'Mark Cooper'}</Text>
           </View>
-          <TouchableOpacity style={styles.avatarButton}>
-            <Text style={styles.avatarIcon}>👤</Text>
-          </TouchableOpacity>
+          <View style={styles.headerRight}>
+            <TouchableOpacity 
+              style={styles.notificationButton}
+              onPress={() => setActiveTab('Notifications')}
+            >
+              <Text style={styles.notificationIcon}>🔔</Text>
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>5</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.avatarButton}>
+              <Text style={styles.avatarIcon}>👤</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        {/* Notifications Screen */}
+        {activeTab === 'Notifications' && (
+          <>
+            {/* Notifications Header */}
+            <View style={styles.notificationsHeader}>
+              <Text style={styles.notificationsTitle}>Notifications</Text>
+              <TouchableOpacity style={styles.markAllReadButton}>
+                <Text style={styles.markAllReadText}>Mark all as read</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Notification Items */}
+            <View style={styles.section}>
+              <View style={styles.notificationItem}>
+                <View style={styles.notificationIconContainer}>
+                  <Text style={styles.notifIcon}>🎉</Text>
+                </View>
+                <View style={styles.notificationContent}>
+                  <Text style={styles.notificationTitle}>New Fishing Zone!</Text>
+                  <Text style={styles.notificationMessage}>
+                    A high-yield zone detected near Marina Beach
+                  </Text>
+                  <Text style={styles.notificationTimestamp}>2 hours ago</Text>
+                </View>
+                <View style={styles.unreadDot} />
+              </View>
+
+              <View style={styles.notificationItem}>
+                <View style={styles.notificationIconContainer}>
+                  <Text style={styles.notifIcon}>⚠️</Text>
+                </View>
+                <View style={styles.notificationContent}>
+                  <Text style={styles.notificationTitle}>Weather Alert</Text>
+                  <Text style={styles.notificationMessage}>
+                    Heavy winds expected tonight 8 PM - 2 AM
+                  </Text>
+                  <Text style={styles.notificationTimestamp}>5 hours ago</Text>
+                </View>
+                <View style={styles.unreadDot} />
+              </View>
+
+              <View style={styles.notificationItem}>
+                <View style={styles.notificationIconContainer}>
+                  <Text style={styles.notifIcon}>🏆</Text>
+                </View>
+                <View style={styles.notificationContent}>
+                  <Text style={styles.notificationTitle}>Achievement Unlocked!</Text>
+                  <Text style={styles.notificationMessage}>
+                    You earned 500 coins for tracking 10 fish species
+                  </Text>
+                  <Text style={styles.notificationTimestamp}>1 day ago</Text>
+                </View>
+                <View style={styles.unreadDot} />
+              </View>
+
+              <View style={[styles.notificationItem, styles.notificationRead]}>
+                <View style={styles.notificationIconContainer}>
+                  <Text style={styles.notifIcon}>📊</Text>
+                </View>
+                <View style={styles.notificationContent}>
+                  <Text style={styles.notificationTitle}>Weekly Report Ready</Text>
+                  <Text style={styles.notificationMessage}>
+                    Your fishing report is available to view
+                  </Text>
+                  <Text style={styles.notificationTimestamp}>2 days ago</Text>
+                </View>
+              </View>
+
+              <View style={[styles.notificationItem, styles.notificationRead]}>
+                <View style={styles.notificationIconContainer}>
+                  <Text style={styles.notifIcon}>🌊</Text>
+                </View>
+                <View style={styles.notificationContent}>
+                  <Text style={styles.notificationTitle}>Conservation Update</Text>
+                  <Text style={styles.notificationMessage}>
+                    50kg plastic removed from coastal areas
+                  </Text>
+                  <Text style={styles.notificationTimestamp}>3 days ago</Text>
+                </View>
+              </View>
+
+              <View style={[styles.notificationItem, styles.notificationRead]}>
+                <View style={styles.notificationIconContainer}>
+                  <Text style={styles.notifIcon}>🪙</Text>
+                </View>
+                <View style={styles.notificationContent}>
+                  <Text style={styles.notificationTitle}>Coins Earned</Text>
+                  <Text style={styles.notificationMessage}>
+                    +100 coins for daily check-in streak
+                  </Text>
+                  <Text style={styles.notificationTimestamp}>4 days ago</Text>
+                </View>
+              </View>
+
+              <View style={[styles.notificationItem, styles.notificationRead]}>
+                <View style={styles.notificationIconContainer}>
+                  <Text style={styles.notifIcon}>🎣</Text>
+                </View>
+                <View style={styles.notificationContent}>
+                  <Text style={styles.notificationTitle}>Catch Recorded</Text>
+                  <Text style={styles.notificationMessage}>
+                    Successfully logged 5 fish catches
+                  </Text>
+                  <Text style={styles.notificationTimestamp}>5 days ago</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.bottomSpacer} />
+          </>
+        )}
+
         {/* Profile Screen */}
         {activeTab === 'Profile' && (
           <View style={styles.profileScreen}>
@@ -248,8 +371,99 @@ export default function App() {
           </View>
         )}
 
+        {/* Update Screen */}
+        {activeTab === 'Update' && (
+          <>
+            {/* Coins/Rewards Card */}
+            <View style={styles.coinsCard}>
+              <View style={styles.coinsContent}>
+                <Text style={styles.coinsIcon}>🪙</Text>
+                <View style={styles.coinsInfo}>
+                  <Text style={styles.coinsLabel}>Your Rewards</Text>
+                  <Text style={styles.coinsAmount}>2,450 Coins</Text>
+                </View>
+              </View>
+              <TouchableOpacity style={styles.redeemButton}>
+                <Text style={styles.redeemButtonText}>Redeem</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Record Catch Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Record Your Catch</Text>
+              <View style={styles.recordCatchCard}>
+                <View style={styles.recordCatchHeader}>
+                  <Text style={styles.recordCatchIcon}>🎣</Text>
+                  <View style={styles.recordCatchHeaderText}>
+                    <Text style={styles.recordCatchTitle}>Log Today's Catch</Text>
+                    <Text style={styles.recordCatchSubtitle}>Track your fishing activity and earn rewards</Text>
+                  </View>
+                </View>
+
+                <View style={styles.catchInputSection}>
+                  <View style={styles.catchInputRow}>
+                    <View style={styles.catchInputField}>
+                      <Text style={styles.catchInputLabel}>Fish Type</Text>
+                      <View style={styles.catchInput}>
+                        <Text style={styles.catchInputPlaceholder}>Select species</Text>
+                        <Text style={styles.catchInputIcon}>▼</Text>
+                      </View>
+                    </View>
+                    <View style={styles.catchInputField}>
+                      <Text style={styles.catchInputLabel}>Quantity</Text>
+                      <View style={styles.catchInput}>
+                        <Text style={styles.catchInputPlaceholder}>Enter count</Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.catchInputRow}>
+                    <View style={styles.catchInputField}>
+                      <Text style={styles.catchInputLabel}>Weight (kg)</Text>
+                      <View style={styles.catchInput}>
+                        <Text style={styles.catchInputPlaceholder}>Total weight</Text>
+                      </View>
+                    </View>
+                    <View style={styles.catchInputField}>
+                      <Text style={styles.catchInputLabel}>Location</Text>
+                      <View style={styles.catchInput}>
+                        <Text style={styles.catchInputPlaceholder}>Current GPS</Text>
+                        <Text style={styles.catchInputIcon}>📍</Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+
+                <View style={styles.catchQuickStats}>
+                  <View style={styles.quickStatItem}>
+                    <Text style={styles.quickStatLabel}>Today's Total</Text>
+                    <Text style={styles.quickStatValue}>12 fish</Text>
+                  </View>
+                  <View style={styles.quickStatDivider} />
+                  <View style={styles.quickStatItem}>
+                    <Text style={styles.quickStatLabel}>This Week</Text>
+                    <Text style={styles.quickStatValue}>87 fish</Text>
+                  </View>
+                  <View style={styles.quickStatDivider} />
+                  <View style={styles.quickStatItem}>
+                    <Text style={styles.quickStatLabel}>Best Catch</Text>
+                    <Text style={styles.quickStatValue}>15.2 kg</Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity style={styles.recordFishButton}>
+                  <Text style={styles.recordFishButtonIcon}>📝</Text>
+                  <Text style={styles.recordFishButtonText}>Record Fish Catch</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.bottomSpacer} />
+          </>
+        )}
+
         {/* Home/Dashboard Screen */}
-        {activeTab !== 'Profile' && (
+        {activeTab !== 'Profile' && activeTab !== 'Update' && activeTab !== 'Notifications' && (
           <>
         {/* Coins/Rewards Card */}
         <View style={styles.coinsCard}>
@@ -263,6 +477,34 @@ export default function App() {
           <TouchableOpacity style={styles.redeemButton}>
             <Text style={styles.redeemButtonText}>Redeem</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* What's New Today Banner */}
+        <View style={styles.updateBanner}>
+          <View style={styles.updateBannerHeader}>
+            <Text style={styles.updateBannerIcon}>📢</Text>
+            <Text style={styles.updateBannerTitle}>What's New Today</Text>
+          </View>
+          <Text style={styles.updateBannerText}>
+            Stay informed with real-time updates on fishing zones, weather alerts, 
+            achievements, and ocean conservation efforts.
+          </Text>
+          <View style={styles.updateStats}>
+            <View style={styles.updateStatItem}>
+              <Text style={styles.updateStatNumber}>5</Text>
+              <Text style={styles.updateStatLabel}>New Updates</Text>
+            </View>
+            <View style={styles.updateStatDivider} />
+            <View style={styles.updateStatItem}>
+              <Text style={styles.updateStatNumber}>2</Text>
+              <Text style={styles.updateStatLabel}>Urgent Alerts</Text>
+            </View>
+            <View style={styles.updateStatDivider} />
+            <View style={styles.updateStatItem}>
+              <Text style={styles.updateStatNumber}>1</Text>
+              <Text style={styles.updateStatLabel}>Rewards</Text>
+            </View>
+          </View>
         </View>
 
         {/* Map Section */}
@@ -463,6 +705,39 @@ const styles = StyleSheet.create({
   },
   headerLeft: {
     flex: 1,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  notificationButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    position: 'relative',
+  },
+  notificationIcon: {
+    fontSize: 24,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#ff5252',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  notificationBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: 'bold',
   },
   greeting: {
     fontSize: 14,
@@ -889,6 +1164,130 @@ const styles = StyleSheet.create({
     color: '#666',
   },
 
+  // Record Catch Section
+  recordCatchCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  recordCatchHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  recordCatchIcon: {
+    fontSize: 40,
+    marginRight: 16,
+  },
+  recordCatchHeaderText: {
+    flex: 1,
+  },
+  recordCatchTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  recordCatchSubtitle: {
+    fontSize: 13,
+    color: '#666',
+  },
+  catchInputSection: {
+    marginBottom: 20,
+  },
+  catchInputRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  catchInputField: {
+    flex: 1,
+    marginHorizontal: 4,
+  },
+  catchInputLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  catchInput: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 10,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  catchInputPlaceholder: {
+    fontSize: 14,
+    color: '#999',
+  },
+  catchInputIcon: {
+    fontSize: 14,
+    color: '#666',
+  },
+  catchQuickStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+  },
+  quickStatItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  quickStatLabel: {
+    fontSize: 11,
+    color: '#666',
+    marginBottom: 4,
+  },
+  quickStatValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+  },
+  quickStatDivider: {
+    width: 1,
+    height: 35,
+    backgroundColor: '#ddd',
+    marginHorizontal: 8,
+  },
+  recordFishButton: {
+    backgroundColor: '#4CAF50',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 12,
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  recordFishButtonIcon: {
+    fontSize: 20,
+    marginRight: 10,
+  },
+  recordFishButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+
   // Weather Card
   weatherCard: {
     backgroundColor: '#fff',
@@ -1128,6 +1527,199 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
+  },
+
+  // Notifications Screen
+  notificationsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    backgroundColor: '#fff',
+    marginBottom: 16,
+  },
+  notificationsTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+  },
+  markAllReadButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  markAllReadText: {
+    fontSize: 13,
+    color: '#007bff',
+    fontWeight: '600',
+  },
+  notificationItem: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    position: 'relative',
+  },
+  notificationRead: {
+    backgroundColor: '#f8f9fa',
+  },
+  notificationIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#E3F2FD',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  notifIcon: {
+    fontSize: 24,
+  },
+  notificationContent: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  notificationTitle: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  notificationMessage: {
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 18,
+    marginBottom: 6,
+  },
+  notificationTimestamp: {
+    fontSize: 11,
+    color: '#999',
+  },
+  unreadDot: {
+    position: 'absolute',
+    top: 20,
+    right: 16,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#007bff',
+  },
+
+  // Update Screen
+  updateBanner: {
+    backgroundColor: '#E3F2FD',
+    marginHorizontal: 20,
+    marginBottom: 24,
+    borderRadius: 16,
+    padding: 24,
+    borderLeftWidth: 4,
+    borderLeftColor: '#007bff',
+  },
+  updateBannerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  updateBannerIcon: {
+    fontSize: 28,
+    marginRight: 12,
+  },
+  updateBannerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+  },
+  updateBannerText: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 22,
+    marginBottom: 20,
+  },
+  updateStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+  },
+  updateStatItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  updateStatNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#007bff',
+    marginBottom: 4,
+  },
+  updateStatLabel: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+  },
+  updateStatDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: '#e0e0e0',
+    marginHorizontal: 8,
+  },
+  updateCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  updateHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  updateIcon: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  updateHeaderText: {
+    flex: 1,
+  },
+  updateTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  updateTime: {
+    fontSize: 12,
+    color: '#999',
+  },
+  updateDescription: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 22,
+    marginBottom: 16,
+  },
+  updateButton: {
+    backgroundColor: '#007bff',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  updateButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 
   // Profile Screen
