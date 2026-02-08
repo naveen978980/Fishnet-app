@@ -1,26 +1,23 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Image, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Image, Alert, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as ImagePicker from 'expo-image-picker';
 import { Picker } from '@react-native-picker/picker';
 
-export default function SignupScreen({ 
-  name, 
-  setName, 
-  email, 
-  setEmail, 
-  password, 
-  setPassword, 
-  onSignup, 
-  onSwitchToLogin,
+export default function EditProfileScreen({ 
+  userData,
+  onSave,
+  onCancel,
   isLoading 
 }) {
-  const [phone, setPhone] = useState('');
-  const [licenseId, setLicenseId] = useState('');
-  const [region, setRegion] = useState('Tamil Nadu Coast');
-  const [experience, setExperience] = useState('');
-  const [boatName, setBoatName] = useState('');
-  const [profilePhoto, setProfilePhoto] = useState(null);
+  const [name, setName] = useState(userData?.name || '');
+  const [email, setEmail] = useState(userData?.email || '');
+  const [phone, setPhone] = useState(userData?.phone || '');
+  const [licenseId, setLicenseId] = useState(userData?.licenseId || '');
+  const [region, setRegion] = useState(userData?.region || 'Tamil Nadu Coast');
+  const [experience, setExperience] = useState(userData?.experience?.toString() || '0');
+  const [boatName, setBoatName] = useState(userData?.boatName || '');
+  const [profilePhoto, setProfilePhoto] = useState(userData?.profilePhoto || null);
 
   const regions = [
     'Tamil Nadu Coast',
@@ -88,30 +85,42 @@ export default function SignupScreen({
     );
   };
 
-  const handleSignup = () => {
-    onSignup({
+  const handleSave = () => {
+    // No validation - users can save with whatever they have
+    // Just send all current values
+    onSave({
       name,
       email,
-      password,
       phone,
       licenseId,
       region,
-      experience: experience ? parseInt(experience) : 0,
+      experience: parseInt(experience) || 0,
       boatName,
       profilePhoto
     });
   };
-  return (
-    <View style={styles.authContainer}>
-      <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={styles.authScroll}>
-        <View style={styles.authHeader}>
-          <Text style={styles.authLogo}>🐟</Text>
-          <Text style={styles.authTitle}>Create Account</Text>
-          <Text style={styles.authSubtitle}>Join FISHNET today</Text>
-        </View>
 
-        <View style={styles.authForm}>
+  return (
+    <View style={styles.container}>
+      <StatusBar style="dark" />
+      
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.headerButton} onPress={onCancel}>
+          <Text style={styles.headerButtonText}>✕</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Edit Profile</Text>
+        <TouchableOpacity style={styles.headerButton} onPress={handleSave} disabled={isLoading}>
+          {isLoading ? (
+            <ActivityIndicator size="small" color="#4CAF50" />
+          ) : (
+            <Text style={styles.headerButtonTextSave}>Save</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.form}>
           {/* Profile Photo */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Profile Photo</Text>
@@ -121,7 +130,7 @@ export default function SignupScreen({
               ) : (
                 <View style={styles.photoPlaceholder}>
                   <Text style={styles.photoPlaceholderText}>📷</Text>
-                  <Text style={styles.photoPlaceholderSubtext}>Tap to add photo</Text>
+                  <Text style={styles.photoPlaceholderSubtext}>Tap to change</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -129,7 +138,7 @@ export default function SignupScreen({
 
           {/* Full Name */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Full Name *</Text>
+            <Text style={styles.inputLabel}>Full Name</Text>
             <TextInput
               style={styles.input}
               placeholder="Enter your name"
@@ -141,37 +150,23 @@ export default function SignupScreen({
 
           {/* Email */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Email *</Text>
+            <Text style={styles.inputLabel}>Email</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, styles.inputDisabled]}
               placeholder="your.email@example.com"
               value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
+              editable={false}
               placeholderTextColor="#999"
             />
-          </View>
-
-          {/* Password */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Password *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Minimum 6 characters"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              placeholderTextColor="#999"
-            />
+            <Text style={styles.helperText}>Email cannot be changed</Text>
           </View>
 
           {/* Mobile Number */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Mobile Number *</Text>
+            <Text style={styles.inputLabel}>Mobile Number</Text>
             <TextInput
               style={styles.input}
-              placeholder="+91 9876543210"
+              placeholder="+91 9876543210 (optional)"
               value={phone}
               onChangeText={setPhone}
               keyboardType="phone-pad"
@@ -193,7 +188,7 @@ export default function SignupScreen({
 
           {/* Region */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Region *</Text>
+            <Text style={styles.inputLabel}>Region</Text>
             <View style={styles.pickerContainer}>
               <Picker
                 selectedValue={region}
@@ -225,33 +220,12 @@ export default function SignupScreen({
             <Text style={styles.inputLabel}>Boat Name</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter your boat name (optional)"
+              placeholder="Enter your boat name"
               value={boatName}
               onChangeText={setBoatName}
               placeholderTextColor="#999"
             />
           </View>
-
-          <TouchableOpacity 
-            style={[styles.primaryButton, (isLoading || !name || !email || !password || !phone || !region) && styles.primaryButtonDisabled]} 
-            onPress={handleSignup}
-            disabled={isLoading || !name || !email || !password || !phone || !region}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.primaryButtonText}>Sign Up</Text>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.linkButton}
-            onPress={onSwitchToLogin}
-          >
-            <Text style={styles.linkText}>
-              Already have an account? <Text style={styles.linkTextBold}>Login</Text>
-            </Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
@@ -259,37 +233,48 @@ export default function SignupScreen({
 }
 
 const styles = StyleSheet.create({
-  authContainer: {
+  container: {
     flex: 1,
     backgroundColor: '#F5F6F8',
   },
-  authScroll: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 20,
-  },
-  authHeader: {
+  header: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 40,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 15,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
-  authLogo: {
-    fontSize: 80,
-    marginBottom: 20,
+  headerButton: {
+    width: 60,
+    height: 40,
+    justifyContent: 'center',
   },
-  authTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 8,
-  },
-  authSubtitle: {
-    fontSize: 16,
+  headerButtonText: {
+    fontSize: 24,
     color: '#6B7280',
   },
-  authForm: {
+  headerButtonTextSave: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    textAlign: 'right',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1F2937',
+  },
+  scrollContent: {
+    padding: 20,
+  },
+  form: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    padding: 24,
+    padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -314,32 +299,14 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
     color: '#1F2937',
   },
-  primaryButton: {
-    backgroundColor: '#4CAF50',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    marginBottom: 16,
+  inputDisabled: {
+    backgroundColor: '#F3F4F6',
+    color: '#9CA3AF',
   },
-  primaryButtonDisabled: {
-    backgroundColor: '#9CA3AF',
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  linkButton: {
-    alignItems: 'center',
-    padding: 8,
-  },
-  linkText: {
-    color: '#6B7280',
-    fontSize: 14,
-  },
-  linkTextBold: {
-    color: '#4CAF50',
-    fontWeight: 'bold',
+  helperText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 4,
   },
   photoContainer: {
     alignItems: 'center',

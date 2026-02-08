@@ -18,7 +18,7 @@ const generateToken = (userId) => {
 // @access  Public
 router.post('/register', async (req, res, next) => {
   try {
-    const { name, email, password, phone, licenseId, region, boatName, experience } = req.body;
+    const { name, email, password, phone, licenseId, region, boatName, experience, profilePhoto } = req.body;
 
     // Validate required fields
     if (!name || !email || !password) {
@@ -57,7 +57,8 @@ router.post('/register', async (req, res, next) => {
       licenseId: licenseId || `TN-FSH-${Date.now()}`,
       region: region || 'Tamil Nadu Coast',
       boatName: boatName || '',
-      experience: experience || 0
+      experience: experience || 0,
+      profilePhoto: profilePhoto || ''
     });
 
     await user.save();
@@ -179,6 +180,73 @@ router.get('/me', async (req, res, next) => {
     res.status(401).json({
       success: false,
       error: 'Invalid token'
+    });
+  }
+});
+
+// @route   PUT /api/auth/me
+// @desc    Update user profile
+// @access  Private
+router.put('/me', async (req, res, next) => {
+  try {
+    const { name, phone, licenseId, region, boatName, experience, profilePhoto } = req.body;
+    
+    // Get token from header
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        error: 'No token provided'
+      });
+    }
+
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fishnet_secret_key_2026');
+    
+    // Find user
+    const user = await User.findById(decoded.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    // Update only provided fields (no validation - everything is optional)
+    if (name !== undefined) user.name = name;
+    if (phone !== undefined) user.phone = phone;
+    if (region !== undefined) user.region = region;
+    if (boatName !== undefined) user.boatName = boatName;
+    if (experience !== undefined) user.experience = experience;
+    if (profilePhoto !== undefined) user.profilePhoto = profilePhoto;
+    
+    // Handle license ID separately (check uniqueness if changed)
+    if (licenseId !== undefined && licenseId !== user.licenseId) {
+      const licenseExists = await User.findOne({ licenseId, _id: { $ne: user._id } });
+      if (licenseExists) {
+        return res.status(400).json({
+          success: false,
+          error: 'License ID already in use'
+        });
+      }
+      user.licenseId = licenseId;
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: {
+        user: user.getProfile()
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 });

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Switch, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Switch, Alert, Image } from 'react-native';
 
-export default function SettingsScreen({ userName, onLogout, onLanguageChange }) {
+export default function SettingsScreen({ userName, userData, onLogout, onEditProfile, onLanguageChange }) {
   const [selectedLanguage, setSelectedLanguage] = useState('English');
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
@@ -42,10 +42,17 @@ export default function SettingsScreen({ userName, onLogout, onLanguageChange })
       {/* User Profile Section */}
       <View style={styles.profileSection}>
         <View style={styles.profileAvatar}>
-          <Text style={styles.profileAvatarText}>👤</Text>
+          {userData?.profilePhoto ? (
+            <Image source={{ uri: userData.profilePhoto }} style={styles.profileAvatarImage} />
+          ) : (
+            <Text style={styles.profileAvatarText}>👤</Text>
+          )}
         </View>
-        <Text style={styles.profileName}>{userName || 'Mark Cooper'}</Text>
-        <Text style={styles.profileEmail}>fisherman@example.com</Text>
+        <Text style={styles.profileName}>{userName || 'Fisherman'}</Text>
+        <Text style={styles.profileEmail}>{userData?.email || 'fisherman@example.com'}</Text>
+        {userData?.phone && (
+          <Text style={styles.profilePhone}>{userData.phone}</Text>
+        )}
       </View>
 
       {/* Language Selection */}
@@ -116,7 +123,7 @@ export default function SettingsScreen({ userName, onLogout, onLanguageChange })
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>👤 Account</Text>
         <View style={styles.card}>
-          <TouchableOpacity style={styles.actionItem}>
+          <TouchableOpacity style={styles.actionItem} onPress={onEditProfile}>
             <Text style={styles.actionIcon}>📝</Text>
             <Text style={styles.actionLabel}>Edit Profile</Text>
             <Text style={styles.actionArrow}>›</Text>
@@ -185,6 +192,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+    overflow: 'hidden',
+  },
+  profileAvatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
   },
   profileAvatarText: {
     fontSize: 40,
@@ -199,6 +212,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#FFFFFF',
     opacity: 0.9,
+  },
+  profilePhone: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    opacity: 0.8,
+    marginTop: 2,
   },
   section: {
     paddingHorizontal: 20,

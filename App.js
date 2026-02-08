@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View, ScrollView, TouchableOpacity, Text, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, ScrollView, TouchableOpacity, Text, Alert, ActivityIndicator, Image } from 'react-native';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Import screens
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
+import EditProfileScreen from './screens/EditProfileScreen';
 import HomeScreen from './screens/HomeScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
 import ProfileScreen1 from './screens/ProfileScreen1';
@@ -24,6 +25,7 @@ const API_URL = 'http://10.47.177.52:3000';
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -32,6 +34,8 @@ export default function App() {
   const [userToken, setUserToken] = useState(null);
   const [userId, setUserId] = useState(null);
   const [userName, setUserName] = useState('');
+  const [userData, setUserData] = useState(null);
+  const [profilePhoto, setProfilePhoto] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   
   // Catch form states
@@ -52,11 +56,19 @@ export default function App() {
       const token = await AsyncStorage.getItem('authToken');
       const storedUserId = await AsyncStorage.getItem('userId');
       const storedUserName = await AsyncStorage.getItem('userName');
+      const storedUserData = await AsyncStorage.getItem('userData');
+      const storedProfilePhoto = await AsyncStorage.getItem('profilePhoto');
       
       if (token) {
         setUserToken(token);
         setUserId(storedUserId);
         setUserName(storedUserName);
+        if (storedUserData) {
+          setUserData(JSON.parse(storedUserData));
+        }
+        if (storedProfilePhoto) {
+          setProfilePhoto(storedProfilePhoto);
+        }
         setIsLoggedIn(true);
       }
     } catch (error) {
@@ -94,10 +106,16 @@ export default function App() {
         await AsyncStorage.setItem('authToken', token);
         await AsyncStorage.setItem('userId', user.id);
         await AsyncStorage.setItem('userName', user.name);
+        await AsyncStorage.setItem('userData', JSON.stringify(user));
+        if (user.profilePhoto) {
+          await AsyncStorage.setItem('profilePhoto', user.profilePhoto);
+        }
         
         setUserToken(token);
         setUserId(user.id);
         setUserName(user.name);
+        setUserData(user);
+        setProfilePhoto(user.profilePhoto || null);
         setIsLoggedIn(true);
         
         Alert.alert('Welcome! 👋', `${user.name}, login successful`);
@@ -112,32 +130,52 @@ export default function App() {
     }
   };
 
-  const handleSignup = async () => {
-    if (!name || !email || !password) {
-      Alert.alert('Error', 'Please fill all fields');
+  const handleSignup = async (userData) => {
+    // If called without userData (old way), use state variables
+    const signupData = userData || {
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      password: password,
+      phone: '+91 12345 67890',
+      licenseId: `FSH-${Date.now()}`
+    };
+
+    if (!signupData.name || !signupData.email || !signupData.password) {
+      Alert.alert('Error', 'Please fill all required fields');
       return;
     }
 
-    if (password.length < 6) {
+    if (signupData.password.length < 6) {
       Alert.alert('Error', 'Password must be at least 6 characters');
+      return;
+    }
+
+    if (!signupData.phone) {
+      Alert.alert('Error', 'Please enter your mobile number');
       return;
     }
 
     setIsLoading(true);
     
     try {
+      // Prepare data for API (without profilePhoto for now)
+      const apiData = {
+        name: signupData.name.trim(),
+        email: signupData.email.trim().toLowerCase(),
+        password: signupData.password,
+        phone: signupData.phone,
+        licenseId: signupData.licenseId || `FSH-${Date.now()}`,
+        region: signupData.region || 'Tamil Nadu Coast',
+        experience: signupData.experience || 0,
+        boatName: signupData.boatName || ''
+      };
+
       const response = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: name.trim(),
-          email: email.trim().toLowerCase(),
-          password: password,
-          phone: '+91 12345 67890', // Default for now
-          licenseId: `FSH-${Date.now()}`, // Auto-generate for now
-        })
+        body: JSON.stringify(apiData)
       });
 
       const data = await response.json();
@@ -157,10 +195,16 @@ export default function App() {
         await AsyncStorage.setItem('authToken', token);
         await AsyncStorage.setItem('userId', user.id);
         await AsyncStorage.setItem('userName', user.name);
+        await AsyncStorage.setItem('userData', JSON.stringify(user));
+        if (signupData.profilePhoto || user.profilePhoto) {
+          await AsyncStorage.setItem('profilePhoto', signupData.profilePhoto || user.profilePhoto);
+        }
         
         setUserToken(token);
         setUserId(user.id);
         setUserName(user.name);
+        setUserData(user);
+        setProfilePhoto(signupData.profilePhoto || user.profilePhoto || null);
         setIsLoggedIn(true);
         setShowSignup(false);
         
@@ -194,12 +238,16 @@ export default function App() {
       await AsyncStorage.removeItem('authToken');
       await AsyncStorage.removeItem('userId');
       await AsyncStorage.removeItem('userName');
+      await AsyncStorage.removeItem('userData');
+      await AsyncStorage.removeItem('profilePhoto');
       
       // Clear state
       setIsLoggedIn(false);
       setUserToken(null);
       setUserId(null);
       setUserName('');
+      setUserData(null);
+      setProfilePhoto(null);
       setEmail('');
       setPassword('');
       setName('');
@@ -208,6 +256,49 @@ export default function App() {
     } catch (error) {
       console.error('Logout error:', error);
       setIsLoggedIn(false);
+    }
+  };
+
+  const handleEditProfile = async (updatedData) => {
+    setIsLoading(true);
+    
+    try {
+      const response = await fetch(`${API_URL}/api/auth/me`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userToken}`
+        },
+        body: JSON.stringify(updatedData)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        const updatedUser = data.data?.user || data.user;
+        
+        // Update local storage
+        await AsyncStorage.setItem('userName', updatedUser.name);
+        await AsyncStorage.setItem('userData', JSON.stringify(updatedUser));
+        if (updatedData.profilePhoto || updatedUser.profilePhoto) {
+          await AsyncStorage.setItem('profilePhoto', updatedData.profilePhoto || updatedUser.profilePhoto);
+        }
+        
+        // Update state
+        setUserName(updatedUser.name);
+        setUserData(updatedUser);
+        setProfilePhoto(updatedData.profilePhoto || updatedUser.profilePhoto || profilePhoto);
+        setShowEditProfile(false);
+        
+        Alert.alert('Success! ✅', 'Profile updated successfully');
+      } else {
+        Alert.alert('Update Failed', data.message || data.error || 'Could not update profile');
+      }
+    } catch (error) {
+      console.error('Profile update error:', error);
+      Alert.alert('Error', 'Could not connect to server. Please check your connection.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -313,6 +404,18 @@ export default function App() {
     );
   }
 
+  // Show Edit Profile Screen
+  if (showEditProfile) {
+    return (
+      <EditProfileScreen
+        userData={userData}
+        onSave={handleEditProfile}
+        onCancel={() => setShowEditProfile(false)}
+        isLoading={isLoading}
+      />
+    );
+  }
+
   // Show Login Screen
   if (!isLoggedIn) {
     return (
@@ -355,7 +458,11 @@ export default function App() {
               <Text style={styles.coinsHeaderText}>2,450</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.avatarButton}>
-              <Text style={styles.avatarIcon}>👤</Text>
+              {profilePhoto ? (
+                <Image source={{ uri: profilePhoto }} style={styles.avatarImage} />
+              ) : (
+                <Text style={styles.avatarIcon}>👤</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -366,13 +473,15 @@ export default function App() {
         {activeTab === 'Notifications' && <NotificationsScreen />}
 
         {/* Profile Screen */}
-        {activeTab === 'Profile' && <ProfileScreen1 userName={name} />}
+        {activeTab === 'Profile' && <ProfileScreen1 userName={userName} userData={userData} profilePhoto={profilePhoto} />}
 
         {/* Settings Screen */}
         {activeTab === 'Settings' && (
           <SettingsScreen 
-            userName={name} 
+            userName={userName} 
+            userData={userData}
             onLogout={handleLogout}
+            onEditProfile={() => setShowEditProfile(true)}
             onLanguageChange={(code) => console.log('Language changed to:', code)}
           />
         )}
@@ -553,9 +662,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
   avatarIcon: {
     fontSize: 20,
+  },
+  avatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   
   // Scroll Container

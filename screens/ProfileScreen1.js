@@ -1,9 +1,18 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
 
-const ProfileScreen1 = ({ userName }) => {
+const ProfileScreen1 = ({ userName, userData }) => {
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Profile Photo Section */}
+      {userData?.profilePhoto && (
+        <View style={styles.photoSection}>
+          <View style={styles.photoContainer}>
+            <Image source={{ uri: userData.profilePhoto }} style={styles.profilePhoto} />
+          </View>
+        </View>
+      )}
+
       {/* Fisherman Profile Card */}
       <View style={styles.profileCard}>
         <Text style={styles.cardTitle}>Fisherman Profile</Text>
@@ -12,34 +21,34 @@ const ProfileScreen1 = ({ userName }) => {
           <View style={styles.infoColumn}>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Name</Text>
-              <Text style={styles.infoValue}>{userName || 'Dobby Fisher'}</Text>
+              <Text style={styles.infoValue}>{userName || userData?.name || 'Dobby Fisher'}</Text>
             </View>
             
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Phone</Text>
-              <Text style={styles.infoValue}>+91 91234 56789</Text>
+              <Text style={styles.infoValue}>{userData?.phone || '+91 91234 56789'}</Text>
             </View>
             
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Experience</Text>
-              <Text style={styles.infoValue}>12 Years</Text>
+              <Text style={styles.infoValue}>{userData?.experience ? `${userData.experience} Years` : '12 Years'}</Text>
             </View>
           </View>
 
           <View style={styles.infoColumn}>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>License ID</Text>
-              <Text style={styles.infoValue}>TN-FSH-2025-0093</Text>
+              <Text style={styles.infoValue}>{userData?.licenseId || 'TN-FSH-2025-0093'}</Text>
             </View>
             
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Region</Text>
-              <Text style={styles.infoValue}>Tamil Nadu Coast</Text>
+              <Text style={styles.infoValue}>{userData?.region || 'Tamil Nadu Coast'}</Text>
             </View>
             
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Boat Name</Text>
-              <Text style={styles.infoValue}>Sea Rider</Text>
+              <Text style={styles.infoValue}>{userData?.boatName || 'Sea Rider'}</Text>
             </View>
           </View>
         </View>
@@ -86,6 +95,29 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F6F8',
     padding: 16,
+  },
+  photoSection: {
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingTop: 10,
+  },
+  photoContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 4,
+    borderColor: '#4CAF50',
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  profilePhoto: {
+    width: '100%',
+    height: '100%',
   },
   profileCard: {
     backgroundColor: '#FFFFFF',

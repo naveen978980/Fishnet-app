@@ -39,6 +39,10 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  profilePhoto: {
+    type: String,
+    trim: true
+  },
   role: {
     type: String,
     enum: ['fisherman', 'researcher', 'admin'],
@@ -119,6 +123,7 @@ userSchema.methods.getProfile = function() {
     region: this.region,
     boatName: this.boatName,
     experience: this.experience,
+    profilePhoto: this.profilePhoto,
     role: this.role,
     stats: this.stats,
     createdAt: this.createdAt
