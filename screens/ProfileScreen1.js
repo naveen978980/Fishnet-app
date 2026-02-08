@@ -1,7 +1,68 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const ProfileScreen1 = ({ userName, userData }) => {
+const API_URL = 'http://10.47.177.52:3000';
+
+const ProfileScreen1 = ({ userName, userData: initialUserData }) => {
+  const [userData, setUserData] = useState(initialUserData);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch fresh user data from MongoDB on mount
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem('authToken');
+      
+      if (!token) {
+        console.log('No token found');
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/api/auth/me`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        // Backend returns data directly, not nested
+        const profileData = data.data;
+        setUserData(profileData);
+        // Update AsyncStorage with fresh data
+        await AsyncStorage.setItem('userData', JSON.stringify(profileData));
+        if (profileData.profilePhoto) {
+          await AsyncStorage.setItem('profilePhoto', profileData.profilePhoto);
+        }
+        console.log('Profile loaded from MongoDB:', profileData.name);
+      } else {
+        console.log('Failed to fetch profile:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading && !userData) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2196F3" />
+        <Text style={styles.loadingText}>Loading profile...</Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Profile Photo Section */}
@@ -207,5 +268,16 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5F6F8',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#6B7280',
   },
 });

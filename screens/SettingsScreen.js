@@ -1,10 +1,66 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Switch, Alert, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Switch, Alert, Image, ActivityIndicator } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function SettingsScreen({ userName, userData, onLogout, onEditProfile, onLanguageChange }) {
+const API_URL = 'http://10.47.177.52:3000';
+
+export default function SettingsScreen({ userName: initialUserName, userData: initialUserData, onLogout, onEditProfile, onLanguageChange, profilePhoto: initialProfilePhoto }) {
+  const [userName, setUserName] = useState(initialUserName);
+  const [userData, setUserData] = useState(initialUserData);
+  const [profilePhoto, setProfilePhoto] = useState(initialProfilePhoto);
+  const [loading, setLoading] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('English');
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
+
+  // Fetch fresh user data from MongoDB on mount
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem('authToken');
+      
+      if (!token) {
+        console.log('No token found');
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/api/auth/me`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        // Backend returns data directly, not nested
+        const profileData = data.data;
+        setUserData(profileData);
+        setUserName(profileData.name);
+        setProfilePhoto(profileData.profilePhoto);
+        // Update AsyncStorage with fresh data
+        await AsyncStorage.setItem('userData', JSON.stringify(profileData));
+        await AsyncStorage.setItem('userName', profileData.name);
+        if (profileData.profilePhoto) {
+          await AsyncStorage.setItem('profilePhoto', profileData.profilePhoto);
+        }
+        console.log('Settings loaded from MongoDB:', profileData.name);
+      } else {
+        console.log('Failed to fetch profile:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const languages = [
     { code: 'en', name: 'English', flag: '🇬🇧' },
@@ -39,11 +95,18 @@ export default function SettingsScreen({ userName, userData, onLogout, onEditPro
 
   return (
     <View style={styles.settingsContainer}>
+      {/* Loading Indicator */}
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="small" color="#2196F3" />
+        </View>
+      )}
+
       {/* User Profile Section */}
       <View style={styles.profileSection}>
         <View style={styles.profileAvatar}>
-          {userData?.profilePhoto ? (
-            <Image source={{ uri: userData.profilePhoto }} style={styles.profileAvatarImage} />
+          {profilePhoto ? (
+            <Image source={{ uri: profilePhoto }} style={styles.profileAvatarImage} />
           ) : (
             <Text style={styles.profileAvatarText}>👤</Text>
           )}
@@ -350,5 +413,19 @@ const styles = StyleSheet.create({
   versionSubtext: {
     fontSize: 12,
     color: '#9CA3AF',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 10,
+    backgroundColor: '#FFFFFF',
+    padding: 8,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
 });

@@ -275,19 +275,22 @@ export default function App() {
       const data = await response.json();
 
       if (data.success) {
-        const updatedUser = data.data?.user || data.user;
+        const updatedUser = data.data.user || data.data;
         
         // Update local storage
         await AsyncStorage.setItem('userName', updatedUser.name);
         await AsyncStorage.setItem('userData', JSON.stringify(updatedUser));
-        if (updatedData.profilePhoto || updatedUser.profilePhoto) {
-          await AsyncStorage.setItem('profilePhoto', updatedData.profilePhoto || updatedUser.profilePhoto);
+        if (updatedData.profilePhoto) {
+          await AsyncStorage.setItem('profilePhoto', updatedData.profilePhoto);
+          setProfilePhoto(updatedData.profilePhoto);
+        } else if (updatedUser.profilePhoto) {
+          await AsyncStorage.setItem('profilePhoto', updatedUser.profilePhoto);
+          setProfilePhoto(updatedUser.profilePhoto);
         }
         
         // Update state
         setUserName(updatedUser.name);
         setUserData(updatedUser);
-        setProfilePhoto(updatedData.profilePhoto || updatedUser.profilePhoto || profilePhoto);
         setShowEditProfile(false);
         
         Alert.alert('Success! ✅', 'Profile updated successfully');
