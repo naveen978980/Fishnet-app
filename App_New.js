@@ -1,25 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View, ScrollView, TouchableOpacity, Text, Alert, ActivityIndicator } from 'react-native';
 import * as Location from 'expo-location';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Import screens
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
 import HomeScreen from './screens/HomeScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
-import ProfileScreen1 from './screens/ProfileScreen1';
+import ProfileScreen from './screens/ProfileScreen';
 import UpdateScreen from './screens/UpdateScreen';
-import SettingsScreen from './screens/SettingsScreen';
-import MarketScreen from './screens/MarketScreen';
 
 // Import components
 import RecordCatchForm from './components/RecordCatchForm';
 import FullScreenMap from './components/FullScreenMap';
-
-// API Base URL
-const API_URL = 'http://10.47.177.52:3000';
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -29,10 +23,6 @@ export default function App() {
   const [name, setName] = useState('');
   const [activeTab, setActiveTab] = useState('Home');
   const [showFullScreenMap, setShowFullScreenMap] = useState(false);
-  const [userToken, setUserToken] = useState(null);
-  const [userId, setUserId] = useState(null);
-  const [userName, setUserName] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   
   // Catch form states
   const [catchFishType, setCatchFishType] = useState('');
@@ -42,173 +32,30 @@ export default function App() {
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Check if user is already logged in on app start
-  useEffect(() => {
-    checkLoginStatus();
-  }, []);
-
-  const checkLoginStatus = async () => {
-    try {
-      const token = await AsyncStorage.getItem('authToken');
-      const storedUserId = await AsyncStorage.getItem('userId');
-      const storedUserName = await AsyncStorage.getItem('userName');
-      
-      if (token) {
-        setUserToken(token);
-        setUserId(storedUserId);
-        setUserName(storedUserName);
-        setIsLoggedIn(true);
-      }
-    } catch (error) {
-      console.log('Error checking login status:', error);
-    }
-  };
-
-  const handleLogin = async () => {
-    if (!email || !password) {
+  const handleLogin = () => {
+    if (email && password) {
+      setIsLoggedIn(true);
+      Alert.alert('Welcome! 👋', 'Login successful');
+    } else {
       Alert.alert('Error', 'Please fill all fields');
-      return;
-    }
-
-    setIsLoading(true);
-    
-    try {
-      const response = await fetch(`${API_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          password: password
-        })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Store token and user info
-        const token = data.data?.token || data.token;
-        const user = data.data?.user || data.user;
-        
-        await AsyncStorage.setItem('authToken', token);
-        await AsyncStorage.setItem('userId', user.id);
-        await AsyncStorage.setItem('userName', user.name);
-        
-        setUserToken(token);
-        setUserId(user.id);
-        setUserName(user.name);
-        setIsLoggedIn(true);
-        
-        Alert.alert('Welcome! 👋', `${user.name}, login successful`);
-      } else {
-        Alert.alert('Login Failed', data.message || data.error || 'Invalid email or password');
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      Alert.alert('Error', 'Could not connect to server. Please check your connection.');
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const handleSignup = async () => {
-    if (!name || !email || !password) {
+  const handleSignup = () => {
+    if (name && email && password) {
+      setIsLoggedIn(true);
+      setShowSignup(false);
+      Alert.alert('Success! 🎉', 'Account created successfully');
+    } else {
       Alert.alert('Error', 'Please fill all fields');
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
-      return;
-    }
-
-    setIsLoading(true);
-    
-    try {
-      const response = await fetch(`${API_URL}/api/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: name.trim(),
-          email: email.trim().toLowerCase(),
-          password: password,
-          phone: '+91 12345 67890', // Default for now
-          licenseId: `FSH-${Date.now()}`, // Auto-generate for now
-        })
-      });
-
-      const data = await response.json();
-      
-      // DEBUG LOG
-      console.log('📝 SIGNUP RESPONSE:', JSON.stringify(data, null, 2));
-      console.log('📝 Response status:', response.status);
-
-      if (data.success) {
-        // Store token and user info
-        const token = data.data?.token || data.token;
-        const user = data.data?.user || data.user;
-        
-        console.log('✅ Token exists:', !!token);
-        console.log('✅ User exists:', !!user);
-        
-        await AsyncStorage.setItem('authToken', token);
-        await AsyncStorage.setItem('userId', user.id);
-        await AsyncStorage.setItem('userName', user.name);
-        
-        setUserToken(token);
-        setUserId(user.id);
-        setUserName(user.name);
-        setIsLoggedIn(true);
-        setShowSignup(false);
-        
-        Alert.alert('Success! 🎉', `Welcome ${user.name}! Account created successfully.`);
-      } else {
-        Alert.alert('Signup Failed', data.message || data.error || 'Could not create account');
-      }
-    } catch (error) {
-      console.error('❌ SIGNUP ERROR:', error);
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Error type:', error.name);
-      Alert.alert('Error', 'Could not connect to server. Please check your connection.');
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      // Optional: Call logout API
-      if (userToken) {
-        await fetch(`${API_URL}/api/auth/logout`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${userToken}`
-          }
-        });
-      }
-      
-      // Clear local storage
-      await AsyncStorage.removeItem('authToken');
-      await AsyncStorage.removeItem('userId');
-      await AsyncStorage.removeItem('userName');
-      
-      // Clear state
-      setIsLoggedIn(false);
-      setUserToken(null);
-      setUserId(null);
-      setUserName('');
-      setEmail('');
-      setPassword('');
-      setName('');
-      
-      Alert.alert('Goodbye! 👋', 'Logged out successfully');
-    } catch (error) {
-      console.error('Logout error:', error);
-      setIsLoggedIn(false);
-    }
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setEmail('');
+    setPassword('');
+    setName('');
   };
 
   // Get current location for catch form
@@ -308,7 +155,6 @@ export default function App() {
         setPassword={setPassword}
         onSignup={handleSignup}
         onSwitchToLogin={() => setShowSignup(false)}
-        isLoading={isLoading}
       />
     );
   }
@@ -323,7 +169,6 @@ export default function App() {
         setPassword={setPassword}
         onLogin={handleLogin}
         onSwitchToSignup={() => setShowSignup(true)}
-        isLoading={isLoading}
       />
     );
   }
@@ -338,7 +183,7 @@ export default function App() {
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
             <Text style={styles.greeting}>Hello,</Text>
-            <Text style={styles.userName}>{userName || name || 'Fisherman'}</Text>
+            <Text style={styles.userName}>{name || 'Mark Cooper'}</Text>
           </View>
           <View style={styles.headerRight}>
             <TouchableOpacity 
@@ -349,10 +194,6 @@ export default function App() {
               <View style={styles.notificationBadge}>
                 <Text style={styles.notificationBadgeText}>5</Text>
               </View>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.coinsHeaderButton}>
-              <Text style={styles.coinsHeaderIcon}>🪙</Text>
-              <Text style={styles.coinsHeaderText}>2,450</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.avatarButton}>
               <Text style={styles.avatarIcon}>👤</Text>
@@ -366,19 +207,7 @@ export default function App() {
         {activeTab === 'Notifications' && <NotificationsScreen />}
 
         {/* Profile Screen */}
-        {activeTab === 'Profile' && <ProfileScreen1 userName={name} />}
-
-        {/* Settings Screen */}
-        {activeTab === 'Settings' && (
-          <SettingsScreen 
-            userName={name} 
-            onLogout={handleLogout}
-            onLanguageChange={(code) => console.log('Language changed to:', code)}
-          />
-        )}
-
-        {/* Market Screen - Fish Species Explorer */}
-        {activeTab === 'Market' && <MarketScreen />}
+        {activeTab === 'Profile' && <ProfileScreen userName={name} />}
 
         {/* Update Screen */}
         {activeTab === 'Update' && (
@@ -408,7 +237,7 @@ export default function App() {
         )}
 
         {/* Home/Dashboard Screen */}
-        {activeTab !== 'Profile' && activeTab !== 'Update' && activeTab !== 'Notifications' && activeTab !== 'RecordCatch' && activeTab !== 'Settings' && activeTab !== 'Market' && (
+        {activeTab !== 'Profile' && activeTab !== 'Update' && activeTab !== 'Notifications' && activeTab !== 'RecordCatch' && (
           <HomeScreen onMapPress={() => setShowFullScreenMap(true)} />
         )}
       </ScrollView>
@@ -426,22 +255,22 @@ export default function App() {
           style={[styles.navItem, activeTab === 'Update' && styles.navItemActive]}
           onPress={() => setActiveTab('Update')}
         >
-          <Text style={[styles.navIcon, activeTab === 'Update' && styles.navIconActive]}>🎣</Text>
-          <Text style={[styles.navLabel, activeTab === 'Update' && styles.navLabelActive]}>Record</Text>
+          <Text style={[styles.navIcon, activeTab === 'Update' && styles.navIconActive]}>🔄</Text>
+          <Text style={[styles.navLabel, activeTab === 'Update' && styles.navLabelActive]}>Update</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.navItem, activeTab === 'Market' && styles.navItemActive]}
           onPress={() => setActiveTab('Market')}
         >
-          <Text style={[styles.navIcon, activeTab === 'Market' && styles.navIconActive]}>🐟</Text>
+          <Text style={[styles.navIcon, activeTab === 'Market' && styles.navIconActive]}>🛒</Text>
           <Text style={[styles.navLabel, activeTab === 'Market' && styles.navLabelActive]}>Market</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.navItem, activeTab === 'Settings' && styles.navItemActive]}
-          onPress={() => setActiveTab('Settings')}
+          style={[styles.navItem, activeTab === 'Logout' && styles.navItemActive]}
+          onPress={handleLogout}
         >
-          <Text style={[styles.navIcon, activeTab === 'Settings' && styles.navIconActive]}>⚙️</Text>
-          <Text style={[styles.navLabel, activeTab === 'Settings' && styles.navLabelActive]}>Settings</Text>
+          <Text style={[styles.navIcon, activeTab === 'Logout' && styles.navIconActive]}>🚪</Text>
+          <Text style={[styles.navLabel, activeTab === 'Logout' && styles.navLabelActive]}>Logout</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.navItem, activeTab === 'Profile' && styles.navItemActive]}
@@ -528,24 +357,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: 'bold',
   },
-  coinsHeaderButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginHorizontal: 8,
-  },
-  coinsHeaderIcon: {
-    fontSize: 16,
-    marginRight: 4,
-  },
-  coinsHeaderText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
   avatarButton: {
     width: 40,
     height: 40,
@@ -567,10 +378,10 @@ const styles = StyleSheet.create({
   navbar: {
     flexDirection: 'row',
     backgroundColor: '#fff',
-    paddingVertical: 8,
+    paddingVertical: 12,
     paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 50,
+    paddingTop: 35,
+    paddingBottom: 25,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
     shadowColor: '#000',
@@ -582,7 +393,7 @@ const styles = StyleSheet.create({
   navItem: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 4,
+    paddingVertical: 8,
   },
   navItemActive: {
     backgroundColor: '#f5f5f5',
@@ -590,7 +401,7 @@ const styles = StyleSheet.create({
   },
   navIcon: {
     fontSize: 24,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   navIconActive: {
     opacity: 1,
