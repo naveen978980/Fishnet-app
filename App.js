@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, TextInput, ActivityIndicator } from 'react-native';
 import * as Location from 'expo-location';
+import MapView, { Marker } from 'react-native-maps';
 
 // Record Catch Form Component
 function RecordCatchForm({ onSuccess }) {
@@ -707,73 +708,76 @@ export default function App() {
             </View>
 
             {/* Record Catch Section */}
-            <View style={styles.section}>
-              <Text style={styles.modernSectionTitle}>Record Your Catch</Text>
-              <View style={styles.modernRecordCard}>
-                {/* Log Today's Catch Header */}
-                <View style={styles.modernCardHeader}>
-                  <Text style={styles.modernHeaderIcon}>🎣</Text>
-                  <View style={styles.modernHeaderText}>
-                    <Text style={styles.modernHeaderTitle}>Log Today's Catch</Text>
-                    <Text style={styles.modernHeaderSubtitle}>Track your fishing activity and earn rewards</Text>
+            {/* Modern Record Catch Section */}
+            <View style={styles.modernCatchContainer}>
+              <View style={styles.modernCatchCard}>
+                {/* Card Header */}
+                <Text style={styles.modernCardHeading}>Record Your Catch</Text>
+                
+                {/* Section Title with Icon */}
+                <View style={styles.modernSectionHeader}>
+                  <Text style={styles.modernSectionIcon}>🎣</Text>
+                  <View style={styles.modernSectionTextContainer}>
+                    <Text style={styles.modernSectionTitle}>Log Today's Catch</Text>
+                    <Text style={styles.modernSectionSubtitle}>Track your fishing activity and earn rewards</Text>
                   </View>
                 </View>
 
-                {/* Form Grid */}
+                {/* Two-Column Form Grid */}
                 <View style={styles.modernFormGrid}>
-                  <View style={styles.modernInputRow}>
-                    <View style={styles.modernInputField}>
-                      <Text style={styles.modernLabel}>Fish Type</Text>
-                      <TextInput
-                        style={styles.modernInput}
-                        placeholder="Select species"
-                        placeholderTextColor="#9CA3AF"
-                        value={catchFishType}
-                        onChangeText={setCatchFishType}
-                      />
-                    </View>
-                    <View style={styles.modernInputField}>
-                      <Text style={styles.modernLabel}>Quantity</Text>
-                      <TextInput
-                        style={styles.modernInput}
-                        placeholder="Enter count"
-                        placeholderTextColor="#9CA3AF"
-                        value={catchQuantity}
-                        onChangeText={setCatchQuantity}
-                        keyboardType="number-pad"
-                      />
-                    </View>
+                  <View style={styles.modernFormColumn}>
+                    <Text style={styles.modernInputLabel}>Fish Type</Text>
+                    <TextInput
+                      style={styles.modernInput}
+                      placeholder="e.g., Tuna"
+                      value={catchFishType}
+                      onChangeText={setCatchFishType}
+                      placeholderTextColor="#9CA3AF"
+                    />
                   </View>
+                  <View style={styles.modernFormColumn}>
+                    <Text style={styles.modernInputLabel}>Quantity</Text>
+                    <TextInput
+                      style={styles.modernInput}
+                      placeholder="0"
+                      value={catchQuantity}
+                      onChangeText={setCatchQuantity}
+                      keyboardType="number-pad"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  </View>
+                </View>
 
-                  <View style={styles.modernInputRow}>
-                    <View style={styles.modernInputField}>
-                      <Text style={styles.modernLabel}>Weight (kg)</Text>
-                      <TextInput
-                        style={styles.modernInput}
-                        placeholder="Total weight"
-                        placeholderTextColor="#9CA3AF"
-                        value={catchWeight}
-                        onChangeText={setCatchWeight}
-                        keyboardType="decimal-pad"
-                      />
-                    </View>
-                    <View style={styles.modernInputField}>
-                      <Text style={styles.modernLabel}>Location</Text>
-                      <TouchableOpacity 
-                        style={styles.modernLocationInput}
-                        onPress={getCatchLocation}
-                        disabled={isGettingLocation}
-                      >
-                        {isGettingLocation ? (
-                          <ActivityIndicator size="small" color="#4A90E2" />
-                        ) : catchLocation ? (
-                          <Text style={styles.modernLocationText} numberOfLines={1}>{catchLocation}</Text>
-                        ) : (
-                          <Text style={styles.modernPlaceholder}>Current GPS</Text>
-                        )}
-                        <View style={styles.modernGPSDot} />
-                      </TouchableOpacity>
-                    </View>
+                <View style={styles.modernFormGrid}>
+                  <View style={styles.modernFormColumn}>
+                    <Text style={styles.modernInputLabel}>Weight (kg)</Text>
+                    <TextInput
+                      style={styles.modernInput}
+                      placeholder="0.0"
+                      value={catchWeight}
+                      onChangeText={setCatchWeight}
+                      keyboardType="decimal-pad"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  </View>
+                  <View style={styles.modernFormColumn}>
+                    <Text style={styles.modernInputLabel}>Location</Text>
+                    <TouchableOpacity
+                      style={styles.modernLocationInput}
+                      onPress={getCatchLocation}
+                      disabled={isGettingLocation}
+                    >
+                      {isGettingLocation ? (
+                        <ActivityIndicator size="small" color="#4CAF50" />
+                      ) : catchLocation ? (
+                        <Text style={styles.modernLocationText} numberOfLines={1}>{catchLocation}</Text>
+                      ) : (
+                        <Text style={styles.modernLocationPlaceholder}>Get GPS</Text>
+                      )}
+                      {!isGettingLocation && (
+                        <View style={styles.modernGpsDot} />
+                      )}
+                    </TouchableOpacity>
                   </View>
                 </View>
 
@@ -805,8 +809,8 @@ export default function App() {
                     <ActivityIndicator color="#FFFFFF" />
                   ) : (
                     <>
-                      <Text style={styles.modernButtonIcon}>📝</Text>
-                      <Text style={styles.modernButtonText}>Record Fish Catch</Text>
+                      <Text style={styles.modernSubmitIcon}>✏️</Text>
+                      <Text style={styles.modernSubmitText}>Record Fish Catch</Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -872,14 +876,77 @@ export default function App() {
           </View>
         </View>
 
-        {/* Map Section */}
+        {/* Map Section with Fishing Locations */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Fishing Locations</Text>
+          <Text style={styles.sectionTitle}>🗺️ Fishing Locations</Text>
           <View style={styles.mapContainer}>
-            <View style={styles.mapPlaceholder}>
-              <Text style={styles.mapIcon}>🗺️</Text>
-              <Text style={styles.mapText}>Location 7</Text>
-              <Text style={styles.mapSubtext}>📍 Multiple hotspots marked</Text>
+            <MapView
+              style={styles.map}
+              initialRegion={{
+                latitude: 13.0827,
+                longitude: 80.2707,
+                latitudeDelta: 0.5,
+                longitudeDelta: 0.5,
+              }}
+            >
+              {/* Marina Beach Area */}
+              <Marker
+                coordinate={{ latitude: 13.0500, longitude: 80.2809 }}
+                title="Marina Beach"
+                description="Popular fishing spot - Good for Mackerel"
+                pinColor="#4CAF50"
+              />
+              
+              {/* Kovalam Beach */}
+              <Marker
+                coordinate={{ latitude: 12.7897, longitude: 80.2538 }}
+                title="Kovalam Beach"
+                description="Deep sea fishing - Tuna & Barracuda"
+                pinColor="#2196F3"
+              />
+              
+              {/* Ennore Creek */}
+              <Marker
+                coordinate={{ latitude: 13.2239, longitude: 80.3066 }}
+                title="Ennore Creek"
+                description="Creek fishing - Pomfret & Snapper"
+                pinColor="#FF9800"
+              />
+              
+              {/* Mahabalipuram Shore */}
+              <Marker
+                coordinate={{ latitude: 12.6208, longitude: 80.1989 }}
+                title="Mahabalipuram Shore"
+                description="Coastal fishing - Sardines & Prawns"
+                pinColor="#9C27B0"
+              />
+              
+              {/* Pulicat Lake */}
+              <Marker
+                coordinate={{ latitude: 13.4167, longitude: 80.3167 }}
+                title="Pulicat Lake"
+                description="Brackish water - Mullet & Catfish"
+                pinColor="#F44336"
+              />
+              
+              {/* Royapuram Fishing Harbor */}
+              <Marker
+                coordinate={{ latitude: 13.1147, longitude: 80.2906 }}
+                title="Royapuram Harbor"
+                description="Major fishing port - Various species"
+                pinColor="#00BCD4"
+              />
+              
+              {/* Kasimedu Fishing Harbor */}
+              <Marker
+                coordinate={{ latitude: 13.1187, longitude: 80.2944 }}
+                title="Kasimedu Harbor"
+                description="Active harbor - Fresh catch daily"
+                pinColor="#FFEB3B"
+              />
+            </MapView>
+            <View style={styles.mapLegend}>
+              <Text style={styles.mapLegendText}>📍 7 Fishing Hotspots Near Chennai</Text>
             </View>
           </View>
         </View>
@@ -1506,7 +1573,37 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 16,
     overflow: 'hidden',
-    height: 250,
+    height: 300,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  map: {
+    width: '100%',
+    height: '100%',
+  },
+  mapLegend: {
+    position: 'absolute',
+    bottom: 10,
+    left: 10,
+    right: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  mapLegendText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1F2937',
+    textAlign: 'center',
   },
   mapPlaceholder: {
     flex: 1,
@@ -1529,11 +1626,165 @@ const styles = StyleSheet.create({
     color: '#666',
   },
 
-  // Record Catch Section
+  // Modern Record Catch Section
+  modernCatchContainer: {
+    backgroundColor: '#F5F6F8',
+    padding: 16,
+  },
+  modernCatchCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 5,
+  },
+  modernCardHeading: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 20,
+  },
+  modernSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modernSectionIcon: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  modernSectionTextContainer: {
+    flex: 1,
+  },
+  modernSectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  modernSectionSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  modernFormGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+    gap: 14,
+  },
+  modernFormColumn: {
+    flex: 1,
+  },
+  modernInputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  modernInput: {
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 11,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    fontSize: 14,
+    color: '#1F2937',
+  },
+  modernLocationInput: {
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 11,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 45,
+  },
+  modernLocationText: {
+    fontSize: 13,
+    color: '#1F2937',
+    flex: 1,
+  },
+  modernLocationPlaceholder: {
+    fontSize: 14,
+    color: '#9CA3AF',
+  },
+  modernGpsDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    marginLeft: 8,
+  },
+  modernStatsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    paddingVertical: 18,
+    paddingHorizontal: 12,
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  modernStatItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  modernStatLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 6,
+  },
+  modernStatValue: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#1F2937',
+  },
+  modernStatDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: '#E5E7EB',
+    marginHorizontal: 4,
+  },
+  modernSubmitButton: {
+    backgroundColor: '#4CAF50',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 15,
+    borderRadius: 15,
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  modernSubmitButtonDisabled: {
+    backgroundColor: '#9CA3AF',
+    opacity: 0.6,
+  },
+  modernSubmitIcon: {
+    fontSize: 18,
+    marginRight: 8,
+  },
+  modernSubmitText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+
+  // Record Catch Section (OLD - Keep for backward compatibility)
   recordCatchCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    overflow: 'hidden',
+    padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -1543,9 +1794,10 @@ const styles = StyleSheet.create({
   recordCatchBlueBanner: {
     backgroundColor: '#4A90E2',
     padding: 30,
-    paddingVertical: 40,
     alignItems: 'center',
-    marginBottom: 0,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    marginBottom: 20,
   },
   recordCatchBannerIcon: {
     fontSize: 60,
@@ -1589,8 +1841,6 @@ const styles = StyleSheet.create({
   },
   catchInputSection: {
     marginBottom: 20,
-    paddingHorizontal: 20,
-    paddingTop: 20,
   },
   catchInputRow: {
     flexDirection: 'row',
@@ -1647,7 +1897,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
-    marginHorizontal: 20,
   },
   quickStatItem: {
     alignItems: 'center',
@@ -1676,8 +1925,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 16,
     borderRadius: 12,
-    marginHorizontal: 20,
-    marginBottom: 20,
     shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -2310,164 +2557,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: 'bold',
-  },
-  
-  // Modern Card UI Styles
-  modernSectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 16,
-    paddingHorizontal: 4,
-  },
-  modernRecordCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    elevation: 5,
-    overflow: 'hidden',
-  },
-  modernCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  modernHeaderIcon: {
-    fontSize: 32,
-    marginRight: 12,
-  },
-  modernHeaderText: {
-    flex: 1,
-  },
-  modernHeaderTitle: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  modernHeaderSubtitle: {
-    fontSize: 13,
-    color: '#6B7280',
-    lineHeight: 18,
-  },
-  modernFormGrid: {
-    padding: 20,
-    paddingBottom: 16,
-  },
-  modernInputRow: {
-    flexDirection: 'row',
-    gap: 14,
-    marginBottom: 14,
-  },
-  modernInputField: {
-    flex: 1,
-  },
-  modernLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  modernInput: {
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 11,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: '#111827',
-  },
-  modernLocationInput: {
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 11,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 46,
-  },
-  modernLocationText: {
-    fontSize: 14,
-    color: '#111827',
-    flex: 1,
-  },
-  modernPlaceholder: {
-    fontSize: 14,
-    color: '#9CA3AF',
-  },
-  modernGPSDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#EF4444',
-    marginLeft: 8,
-  },
-  modernStatsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#F3F4F6',
-    backgroundColor: '#FAFBFC',
-  },
-  modernStatItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  modernStatLabel: {
-    fontSize: 11,
-    color: '#6B7280',
-    marginBottom: 6,
-    textAlign: 'center',
-  },
-  modernStatValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#111827',
-  },
-  modernStatDivider: {
-    width: 1,
-    backgroundColor: '#E5E7EB',
-    marginHorizontal: 12,
-  },
-  modernSubmitButton: {
-    backgroundColor: '#22C55E',
-    margin: 20,
-    paddingVertical: 15,
-    borderRadius: 15,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#22C55E',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  modernSubmitButtonDisabled: {
-    backgroundColor: '#86EFAC',
-    opacity: 0.6,
-  },
-  modernButtonIcon: {
-    fontSize: 18,
-    marginRight: 8,
-  },
-  modernButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    letterSpacing: 0.3,
   },
 });
 
