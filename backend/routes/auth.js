@@ -316,4 +316,108 @@ router.post('/logout', (req, res) => {
   });
 });
 
+// @route   POST /api/auth/tokens/spend
+// @desc    Spend tokens (e.g., for market access)
+// @access  Private
+router.post('/tokens/spend', async (req, res) => {
+  try {
+    const { amount, reason } = req.body;
+    
+    // Get token from header
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        error: 'No token provided'
+      });
+    }
+
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fishnet_secret_key_2026');
+    
+    // Find user
+    const user = await User.findById(decoded.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    // Check if user has enough tokens
+    if (user.tokens < amount) {
+      return res.status(400).json({
+        success: false,
+        error: 'Insufficient tokens',
+        currentTokens: user.tokens,
+        required: amount
+      });
+    }
+
+    // Deduct tokens
+    user.tokens -= amount;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: `${amount} tokens spent for ${reason}`,
+      tokens: user.tokens
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// @route   POST /api/auth/tokens/earn
+// @desc    Earn tokens (e.g., for recording catch)
+// @access  Private
+router.post('/tokens/earn', async (req, res) => {
+  try {
+    const { amount, reason } = req.body;
+    
+    // Get token from header
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        error: 'No token provided'
+      });
+    }
+
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fishnet_secret_key_2026');
+    
+    // Find user
+    const user = await User.findById(decoded.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    // Add tokens
+    user.tokens += amount;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: `${amount} tokens earned for ${reason}`,
+      tokens: user.tokens
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

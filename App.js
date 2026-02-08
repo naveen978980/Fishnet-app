@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View, ScrollView, TouchableOpacity, Text, Alert, ActivityIndicator, Image } from 'react-native';
 import * as Location from 'expo-location';
+import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { registerForPushNotificationsAsync, FishnetNotifications, sendLocalNotification } from './services/notificationService';
 
 // Import screens
 import LoginScreen from './screens/LoginScreen';
@@ -36,7 +38,16 @@ export default function App() {
   const [userName, setUserName] = useState('');
   const [userData, setUserData] = useState(null);
   const [profilePhoto, setProfilePhoto] = useState(null);
+  const [userTokens, setUserTokens] = useState(800); // User tokens for rewards
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Notification states
+  const [expoPushToken, setExpoPushToken] = useState('');
+  const [notification, setNotification] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0); // Badge count
+  const [notificationHistory, setNotificationHistory] = useState([]); // Store all notifications
+  const notificationListener = useRef();
+  const responseListener = useRef();
   
   // Catch form states
   const [catchFishType, setCatchFishType] = useState('');
@@ -46,10 +57,80 @@ export default function App() {
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Check if user is already logged in on app start
+  // Check if user is already logged in on app start & setup notifications
   useEffect(() => {
     checkLoginStatus();
+    setupNotifications();
+    
+    // Cleanup notification listeners on unmount
+    return () => {
+      if (notificationListener.current) {
+        notificationListener.current.remove();
+      }
+      if (responseListener.current) {
+        responseListener.current.remove();
+      }
+    };
   }, []);
+
+  // Setup push notifications
+  const setupNotifications = async () => {
+    try {
+      console.log('🔔 Setting up notifications...');
+      const token = await registerForPushNotificationsAsync();
+      if (token) {
+        setExpoPushToken(token);
+        console.log('✅ Notification token received');
+      } else {
+        console.log('⚠️ No push token, but local notifications will work');
+      }
+
+      // Listen for incoming notifications
+      notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+        console.log('📲 Notification received:', notification);
+        setNotification(notification);
+        setNotificationCount(prev => prev + 1); // Increment badge count
+        Notifications.setBadgeCountAsync(notificationCount + 1); // Update app badge
+      });
+
+      // Listen for notification responses (when user taps notification)
+      responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+        console.log('👆 Notification tapped:', response);
+        const data = response.notification.request.content.data;
+        
+        // Handle notification tap based on type
+        if (data.type === 'fish_caught') {
+          setActiveTab('Home');
+        } else if (data.type === 'profile_update') {
+          setActiveTab('Profile');
+        } else if (data.type === 'token_change') {
+          setActiveTab('Profile'); // Show profile where tokens are visible
+        }
+      });
+    } catch (error) {
+      console.error('Error setting up notifications:', error);
+    }
+  };
+
+  // Add notification to history
+  const addNotificationToHistory = (icon, title, message) => {
+    const newNotification = {
+      id: Date.now(),
+      icon,
+      title,
+      message,
+      timestamp: 'Just now',
+      unread: true,
+    };
+    setNotificationHistory(prev => [newNotification, ...prev]);
+  };
+
+  // Mark all notifications as read
+  const markAllNotificationsRead = () => {
+    setNotificationHistory(prev => 
+      prev.map(notif => ({ ...notif, unread: false }))
+    );
+  };
 
   const checkLoginStatus = async () => {
     try {
@@ -64,7 +145,9 @@ export default function App() {
         setUserId(storedUserId);
         setUserName(storedUserName);
         if (storedUserData) {
-          setUserData(JSON.parse(storedUserData));
+          const parsedData = JSON.parse(storedUserData);
+          setUserData(parsedData);
+          setUserTokens(parsedData.tokens || 800);
         }
         if (storedProfilePhoto) {
           setProfilePhoto(storedProfilePhoto);
@@ -116,6 +199,7 @@ export default function App() {
         setUserName(user.name);
         setUserData(user);
         setProfilePhoto(user.profilePhoto || null);
+        setUserTokens(user.tokens || 800);
         setIsLoggedIn(true);
         
         Alert.alert('Welcome! 👋', `${user.name}, login successful`);
@@ -294,6 +378,12 @@ export default function App() {
         setShowEditProfile(false);
         
         Alert.alert('Success! ✅', 'Profile updated successfully');
+        
+        // Send notification with user name
+        await FishnetNotifications.profileUpdated(updatedUser.name || 'Fisherman');
+        
+        // Add to notification history
+        addNotificationToHistory('✅', 'Profile Updated', 'Your profile information has been saved successfully');
       } else {
         Alert.alert('Update Failed', data.message || data.error || 'Could not update profile');
       }
@@ -373,7 +463,18 @@ export default function App() {
       const result = await response.json();
 
       if (result.success) {
-        Alert.alert('Success! 🎣', 'Your catch has been recorded successfully!');
+        // Earn 40 tokens for recording catch
+        await earnTokens(40, 'recording catch');
+        
+        Alert.alert('Success! 🎣', 'Your catch has been recorded successfully!\n\n+40 tokens earned! 🪙');
+        
+        // Send notification with user name
+        await FishnetNotifications.fishCaught(
+          catchFishType.trim(),
+          parseFloat(catchWeight),
+          userName || 'Fisherman'
+        );
+        
         // Reset form
         setCatchFishType('');
         setCatchQuantity('');
@@ -387,6 +488,89 @@ export default function App() {
       Alert.alert('Error', 'Could not connect to the server. Make sure the backend is running.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Earn tokens (for recording catch)
+  const earnTokens = async (amount, reason) => {
+    try {
+      const response = await fetch(`${API_URL}/api/auth/tokens/earn`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userToken}`
+        },
+        body: JSON.stringify({ amount, reason })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setUserTokens(data.tokens);
+        // Update userData
+        const updatedUserData = { ...userData, tokens: data.tokens };
+        setUserData(updatedUserData);
+        await AsyncStorage.setItem('userData', JSON.stringify(updatedUserData));
+        
+        // Send notification for tokens earned
+        const notifMessage = `You earned +${amount} tokens! New balance: ${data.tokens} 🪙`;
+        await sendLocalNotification(
+          '🪙 Tokens Earned!',
+          notifMessage,
+          { type: 'token_change', action: 'earned', amount }
+        );
+        
+        // Add to notification history
+        addNotificationToHistory('🪙', 'Tokens Earned!', notifMessage);
+        
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error earning tokens:', error);
+      return false;
+    }
+  };
+
+  // Spend tokens (for market access)
+  const spendTokens = async (amount, reason) => {
+    try {
+      const response = await fetch(`${API_URL}/api/auth/tokens/spend`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userToken}`
+        },
+        body: JSON.stringify({ amount, reason })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setUserTokens(data.tokens);
+        // Update userData
+        const updatedUserData = { ...userData, tokens: data.tokens };
+        setUserData(updatedUserData);
+        await AsyncStorage.setItem('userData', JSON.stringify(updatedUserData));
+        
+        // Send notification for tokens spent
+        const notifMessage = `You spent -${amount} tokens for ${reason}. Remaining: ${data.tokens} 🪙`;
+        await sendLocalNotification(
+          '💰 Tokens Spent',
+          notifMessage,
+          { type: 'token_change', action: 'spent', amount }
+        );
+        
+        // Add to notification history
+        addNotificationToHistory('💰', 'Tokens Spent', notifMessage);
+        
+        return true;
+      } else {
+        Alert.alert('Insufficient Tokens', `You need ${amount} tokens. Current balance: ${userTokens}`);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error spending tokens:', error);
+      Alert.alert('Error', 'Could not process token transaction');
+      return false;
     }
   };
 
@@ -449,16 +633,22 @@ export default function App() {
           <View style={styles.headerRight}>
             <TouchableOpacity 
               style={styles.notificationButton}
-              onPress={() => setActiveTab('Notifications')}
+              onPress={() => {
+                setActiveTab('Notifications');
+                setNotificationCount(0); // Reset badge when opening notifications
+                Notifications.setBadgeCountAsync(0);
+              }}
             >
               <Text style={styles.notificationIcon}>🔔</Text>
-              <View style={styles.notificationBadge}>
-                <Text style={styles.notificationBadgeText}>5</Text>
-              </View>
+              {notificationCount > 0 && (
+                <View style={styles.notificationBadge}>
+                  <Text style={styles.notificationBadgeText}>{notificationCount}</Text>
+                </View>
+              )}
             </TouchableOpacity>
             <TouchableOpacity style={styles.coinsHeaderButton}>
               <Text style={styles.coinsHeaderIcon}>🪙</Text>
-              <Text style={styles.coinsHeaderText}>2,450</Text>
+              <Text style={styles.coinsHeaderText}>{userTokens.toLocaleString()}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.avatarButton}>
               {profilePhoto ? (
@@ -473,7 +663,12 @@ export default function App() {
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* Notifications Screen */}
-        {activeTab === 'Notifications' && <NotificationsScreen />}
+        {activeTab === 'Notifications' && (
+          <NotificationsScreen 
+            notifications={notificationHistory} 
+            onMarkAllRead={markAllNotificationsRead}
+          />
+        )}
 
         {/* Profile Screen */}
         {activeTab === 'Profile' && <ProfileScreen1 userName={userName} userData={userData} profilePhoto={profilePhoto} />}
@@ -490,7 +685,7 @@ export default function App() {
         )}
 
         {/* Market Screen - Fish Species Explorer */}
-        {activeTab === 'Market' && <MarketScreen />}
+        {activeTab === 'Market' && <MarketScreen spendTokens={spendTokens} />}
 
         {/* Update Screen */}
         {activeTab === 'Update' && (

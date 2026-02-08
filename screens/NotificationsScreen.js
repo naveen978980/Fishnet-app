@@ -1,78 +1,35 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 
-export default function NotificationsScreen() {
-  const notifications = [
-    {
-      id: 1,
-      icon: '🎉',
-      title: 'New Fishing Zone!',
-      message: 'A high-yield zone detected near Marina Beach',
-      timestamp: '2 hours ago',
-      unread: true,
-    },
-    {
-      id: 2,
-      icon: '⚠️',
-      title: 'Weather Alert',
-      message: 'Heavy winds expected tonight 8 PM - 2 AM',
-      timestamp: '5 hours ago',
-      unread: true,
-    },
-    {
-      id: 3,
-      icon: '🏆',
-      title: 'Achievement Unlocked!',
-      message: 'You earned 500 coins for tracking 10 fish species',
-      timestamp: '1 day ago',
-      unread: true,
-    },
-    {
-      id: 4,
-      icon: '📊',
-      title: 'Weekly Report Ready',
-      message: 'Your fishing report is available to view',
-      timestamp: '2 days ago',
-      unread: false,
-    },
-    {
-      id: 5,
-      icon: '🌊',
-      title: 'Conservation Update',
-      message: '50kg plastic removed from coastal areas',
-      timestamp: '3 days ago',
-      unread: false,
-    },
-    {
-      id: 6,
-      icon: '🪙',
-      title: 'Coins Earned',
-      message: '+100 coins for daily check-in streak',
-      timestamp: '4 days ago',
-      unread: false,
-    },
-    {
-      id: 7,
-      icon: '🎣',
-      title: 'Catch Recorded',
-      message: 'Successfully logged 5 fish catches',
-      timestamp: '5 days ago',
-      unread: false,
-    },
-  ];
+export default function NotificationsScreen({ notifications = [], onMarkAllRead }) {
+  // If no notifications passed, show default message
+  if (notifications.length === 0) {
+    return (
+      <>
+        <View style={styles.notificationsHeader}>
+          <Text style={styles.notificationsTitle}>Notifications</Text>
+        </View>
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyIcon}>🔔</Text>
+          <Text style={styles.emptyText}>No notifications yet</Text>
+          <Text style={styles.emptySubtext}>You'll see notifications here when you earn or spend tokens</Text>
+        </View>
+      </>
+    );
+  }
 
   return (
     <>
       {/* Notifications Header */}
       <View style={styles.notificationsHeader}>
         <Text style={styles.notificationsTitle}>Notifications</Text>
-        <TouchableOpacity style={styles.markAllReadButton}>
+        <TouchableOpacity style={styles.markAllReadButton} onPress={onMarkAllRead}>
           <Text style={styles.markAllReadText}>Mark all as read</Text>
         </TouchableOpacity>
       </View>
 
       {/* Notification Items */}
-      <View style={styles.section}>
+      <ScrollView style={styles.section} showsVerticalScrollIndicator={false}>
         {notifications.map((notification) => (
           <View
             key={notification.id}
@@ -92,7 +49,7 @@ export default function NotificationsScreen() {
             {notification.unread && <View style={styles.unreadDot} />}
           </View>
         ))}
-      </View>
+      </ScrollView>
     </>
   );
 }
@@ -175,5 +132,27 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: '#4CAF50',
     marginTop: 8,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 100,
+  },
+  emptyIcon: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    paddingHorizontal: 40,
   },
 });

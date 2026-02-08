@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Dimensions, Image, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Dimensions, Image, TextInput, Alert } from 'react-native';
 import MapView, { Marker, Polyline, Circle } from 'react-native-maps';
 
 const { width, height } = Dimensions.get('window');
@@ -140,14 +140,24 @@ const fishSpeciesData = [
   },
 ];
 
-const MarketScreen = () => {
+const MarketScreen = ({ spendTokens }) => {
   const [selectedFish, setSelectedFish] = useState(null);
   const [mapVisible, setMapVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const openFishMap = (fish) => {
-    setSelectedFish(fish);
-    setMapVisible(true);
+  const openFishMap = async (fish) => {
+    // Charge 40 tokens to view fish details
+    const success = await spendTokens(40, `viewing ${fish.name} details`);
+    if (success) {
+      setSelectedFish(fish);
+      setMapVisible(true);
+      Alert.alert(
+        `${fish.emoji} ${fish.name} Details`,
+        `You can now view ${fish.name} migration patterns and predictions!\n\n-40 tokens spent 🪙`,
+        [{ text: 'OK' }]
+      );
+    }
+    // If spendTokens returns false, it already showed an insufficient tokens alert
   };
 
   const closeFishMap = () => {

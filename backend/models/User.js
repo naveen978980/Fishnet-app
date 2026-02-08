@@ -43,6 +43,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  tokens: {
+    type: Number,
+    default: 800  // Users get 800 tokens on signup
+  },
   role: {
     type: String,
     enum: ['fisherman', 'researcher', 'admin'],
@@ -124,6 +128,7 @@ userSchema.methods.getProfile = function() {
     boatName: this.boatName,
     experience: this.experience,
     profilePhoto: this.profilePhoto,
+    tokens: this.tokens,
     role: this.role,
     stats: this.stats,
     createdAt: this.createdAt
