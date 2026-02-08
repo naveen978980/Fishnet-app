@@ -19,15 +19,17 @@
 
 ```env
 # MongoDB Configuration
-MONGODB_URI=mongodb+srv://naveen1122005:t3jpBuw1uYkJhpRH@fishnet.abflie3.mongodb.net/fishnet?retryWrites=true&w=majority&appName=fishnet
+MONGODB_URI=your_mongodb_connection_string_here
 
 # Server Configuration
 PORT=3000
 NODE_ENV=development
 
 # JWT Configuration
-JWT_SECRET=fishnet_secure_jwt_secret_key_2026_naveen
+JWT_SECRET=your_secure_jwt_secret_key_here
 ```
+
+**⚠️ Security Note**: Replace placeholders with your actual credentials. Never commit real credentials to Git!
 
 ---
 
