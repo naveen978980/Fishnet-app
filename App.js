@@ -1,6 +1,231 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, TextInput } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, TextInput, ActivityIndicator } from 'react-native';
+import * as Location from 'expo-location';
+
+// Record Catch Form Component
+function RecordCatchForm({ onSuccess }) {
+  const [fishType, setFishType] = useState('');
+  const [weight, setWeight] = useState('');
+  const [length, setLength] = useState('');
+  const [quantity, setQuantity] = useState('1');
+  const [notes, setNotes] = useState('');
+  const [location, setLocation] = useState(null);
+  const [locationName, setLocationName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [gettingLocation, setGettingLocation] = useState(false);
+
+  useEffect(() => {
+    getCurrentLocation();
+  }, []);
+
+  const getCurrentLocation = async () => {
+    try {
+      setGettingLocation(true);
+      
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Denied',
+          'Location permission is required to record your catch location.'
+        );
+        setGettingLocation(false);
+        return;
+      }
+
+      const currentLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      setLocation({
+        latitude: currentLocation.coords.latitude,
+        longitude: currentLocation.coords.longitude,
+      });
+
+      // Display as Latitude and Longitude
+      setLocationName(`Lat: ${currentLocation.coords.latitude.toFixed(6)}, Long: ${currentLocation.coords.longitude.toFixed(6)}`);
+
+      setGettingLocation(false);
+    } catch (error) {
+      console.error('Error getting location:', error);
+      Alert.alert('Error', 'Could not get your current location');
+      setGettingLocation(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!fishType.trim()) {
+      Alert.alert('Missing Information', 'Please enter the fish type');
+      return;
+    }
+
+    if (!weight.trim()) {
+      Alert.alert('Missing Information', 'Please enter the weight');
+      return;
+    }
+
+    if (!location) {
+      Alert.alert('Missing Information', 'Please allow location access to record your catch');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const catchData = {
+        fishType: fishType.trim(),
+        weight: parseFloat(weight),
+        length: length ? parseFloat(length) : null,
+        quantity: parseInt(quantity) || 1,
+        location: locationName || `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`,
+        coordinates: location,
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toLocaleTimeString(),
+        notes: notes.trim(),
+      };
+
+      const response = await fetch('http://10.47.177.52:3000/api/catches', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(catchData),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        onSuccess();
+      } else {
+        Alert.alert('Error', result.message || 'Failed to record catch');
+      }
+    } catch (error) {
+      console.error('Error submitting catch:', error);
+      Alert.alert(
+        'Error',
+        'Could not connect to the server. Make sure the backend is running.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <ScrollView style={styles.recordCatchContainer}>
+      <View style={styles.recordCatchForm}>
+        {/* Fish Type */}
+        <View style={styles.formGroup}>
+          <Text style={styles.formLabel}>Fish Type *</Text>
+          <TextInput
+            style={styles.formInput}
+            placeholder="e.g., Bass, Trout, Salmon"
+            value={fishType}
+            onChangeText={setFishType}
+            placeholderTextColor="#999"
+          />
+        </View>
+
+        {/* Weight */}
+        <View style={styles.formGroup}>
+          <Text style={styles.formLabel}>Weight (kg) *</Text>
+          <TextInput
+            style={styles.formInput}
+            placeholder="e.g., 2.5"
+            value={weight}
+            onChangeText={setWeight}
+            keyboardType="decimal-pad"
+            placeholderTextColor="#999"
+          />
+        </View>
+
+        {/* Length */}
+        <View style={styles.formGroup}>
+          <Text style={styles.formLabel}>Length (cm)</Text>
+          <TextInput
+            style={styles.formInput}
+            placeholder="e.g., 45"
+            value={length}
+            onChangeText={setLength}
+            keyboardType="decimal-pad"
+            placeholderTextColor="#999"
+          />
+        </View>
+
+        {/* Quantity */}
+        <View style={styles.formGroup}>
+          <Text style={styles.formLabel}>Quantity</Text>
+          <TextInput
+            style={styles.formInput}
+            placeholder="Number of fish caught"
+            value={quantity}
+            onChangeText={setQuantity}
+            keyboardType="number-pad"
+            placeholderTextColor="#999"
+          />
+        </View>
+
+        {/* Location */}
+        <View style={styles.formGroup}>
+          <Text style={styles.formLabel}>Location *</Text>
+          <View style={styles.locationBox}>
+            {gettingLocation ? (
+              <View style={styles.locationLoading}>
+                <ActivityIndicator size="small" color="#4A90E2" />
+                <Text style={styles.locationLoadingText}>Getting location...</Text>
+              </View>
+            ) : location ? (
+              <View style={styles.locationInfo}>
+                <Text style={styles.locationText}>📍 {locationName}</Text>
+                <TouchableOpacity
+                  style={styles.refreshLocationButton}
+                  onPress={getCurrentLocation}
+                >
+                  <Text style={styles.refreshLocationText}>🔄</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.getLocationButton}
+                onPress={getCurrentLocation}
+              >
+                <Text style={styles.getLocationButtonText}>📍 Get Current Location</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        {/* Notes */}
+        <View style={styles.formGroup}>
+          <Text style={styles.formLabel}>Notes</Text>
+          <TextInput
+            style={[styles.formInput, styles.formTextArea]}
+            placeholder="Additional details (bait used, weather, etc.)"
+            value={notes}
+            onChangeText={setNotes}
+            multiline
+            numberOfLines={4}
+            textAlignVertical="top"
+            placeholderTextColor="#999"
+          />
+        </View>
+
+        {/* Submit Button */}
+        <TouchableOpacity
+          style={[styles.submitCatchButton, loading && styles.submitCatchButtonDisabled]}
+          onPress={handleSubmit}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.submitCatchButtonText}>🎣 Record Catch</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+  );
+}
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -9,6 +234,14 @@ export default function App() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [activeTab, setActiveTab] = useState('Home'); // Track active navbar tab
+  
+  // Catch form states
+  const [catchFishType, setCatchFishType] = useState('');
+  const [catchQuantity, setCatchQuantity] = useState('');
+  const [catchWeight, setCatchWeight] = useState('');
+  const [catchLocation, setCatchLocation] = useState('');
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleLogin = () => {
     if (email && password) {
@@ -34,6 +267,91 @@ export default function App() {
     setEmail('');
     setPassword('');
     setName('');
+  };
+
+  // Get current location for catch form
+  const getCatchLocation = async () => {
+    try {
+      setIsGettingLocation(true);
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Location permission is required');
+        setIsGettingLocation(false);
+        return;
+      }
+
+      const currentLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      const locationStr = `Lat: ${currentLocation.coords.latitude.toFixed(6)}, Long: ${currentLocation.coords.longitude.toFixed(6)}`;
+      setCatchLocation(locationStr);
+      setIsGettingLocation(false);
+    } catch (error) {
+      console.error('Error getting location:', error);
+      Alert.alert('Error', 'Could not get your current location');
+      setIsGettingLocation(false);
+    }
+  };
+
+  // Submit catch record
+  const submitCatchRecord = async () => {
+    if (!catchFishType.trim()) {
+      Alert.alert('Missing Information', 'Please enter the fish type');
+      return;
+    }
+    if (!catchQuantity.trim()) {
+      Alert.alert('Missing Information', 'Please enter the quantity');
+      return;
+    }
+    if (!catchWeight.trim()) {
+      Alert.alert('Missing Information', 'Please enter the weight');
+      return;
+    }
+    if (!catchLocation.trim()) {
+      Alert.alert('Missing Information', 'Please get location first');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const catchData = {
+        fishType: catchFishType.trim(),
+        weight: parseFloat(catchWeight),
+        quantity: parseInt(catchQuantity) || 1,
+        location: catchLocation,
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toLocaleTimeString(),
+      };
+
+      const response = await fetch('http://10.47.177.52:3000/api/catches', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(catchData),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        Alert.alert('Success! 🎣', 'Your catch has been recorded successfully!');
+        // Reset form
+        setCatchFishType('');
+        setCatchQuantity('');
+        setCatchWeight('');
+        setCatchLocation('');
+      } else {
+        Alert.alert('Error', result.message || 'Failed to record catch');
+      }
+    } catch (error) {
+      console.error('Error submitting catch:', error);
+      Alert.alert('Error', 'Could not connect to the server. Make sure the backend is running.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Signup Screen
@@ -390,70 +708,107 @@ export default function App() {
 
             {/* Record Catch Section */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Record Your Catch</Text>
-              <View style={styles.recordCatchCard}>
-                <View style={styles.recordCatchHeader}>
-                  <Text style={styles.recordCatchIcon}>🎣</Text>
-                  <View style={styles.recordCatchHeaderText}>
-                    <Text style={styles.recordCatchTitle}>Log Today's Catch</Text>
-                    <Text style={styles.recordCatchSubtitle}>Track your fishing activity and earn rewards</Text>
+              <Text style={styles.modernSectionTitle}>Record Your Catch</Text>
+              <View style={styles.modernRecordCard}>
+                {/* Log Today's Catch Header */}
+                <View style={styles.modernCardHeader}>
+                  <Text style={styles.modernHeaderIcon}>🎣</Text>
+                  <View style={styles.modernHeaderText}>
+                    <Text style={styles.modernHeaderTitle}>Log Today's Catch</Text>
+                    <Text style={styles.modernHeaderSubtitle}>Track your fishing activity and earn rewards</Text>
                   </View>
                 </View>
 
-                <View style={styles.catchInputSection}>
-                  <View style={styles.catchInputRow}>
-                    <View style={styles.catchInputField}>
-                      <Text style={styles.catchInputLabel}>Fish Type</Text>
-                      <View style={styles.catchInput}>
-                        <Text style={styles.catchInputPlaceholder}>Select species</Text>
-                        <Text style={styles.catchInputIcon}>▼</Text>
-                      </View>
+                {/* Form Grid */}
+                <View style={styles.modernFormGrid}>
+                  <View style={styles.modernInputRow}>
+                    <View style={styles.modernInputField}>
+                      <Text style={styles.modernLabel}>Fish Type</Text>
+                      <TextInput
+                        style={styles.modernInput}
+                        placeholder="Select species"
+                        placeholderTextColor="#9CA3AF"
+                        value={catchFishType}
+                        onChangeText={setCatchFishType}
+                      />
                     </View>
-                    <View style={styles.catchInputField}>
-                      <Text style={styles.catchInputLabel}>Quantity</Text>
-                      <View style={styles.catchInput}>
-                        <Text style={styles.catchInputPlaceholder}>Enter count</Text>
-                      </View>
+                    <View style={styles.modernInputField}>
+                      <Text style={styles.modernLabel}>Quantity</Text>
+                      <TextInput
+                        style={styles.modernInput}
+                        placeholder="Enter count"
+                        placeholderTextColor="#9CA3AF"
+                        value={catchQuantity}
+                        onChangeText={setCatchQuantity}
+                        keyboardType="number-pad"
+                      />
                     </View>
                   </View>
 
-                  <View style={styles.catchInputRow}>
-                    <View style={styles.catchInputField}>
-                      <Text style={styles.catchInputLabel}>Weight (kg)</Text>
-                      <View style={styles.catchInput}>
-                        <Text style={styles.catchInputPlaceholder}>Total weight</Text>
-                      </View>
+                  <View style={styles.modernInputRow}>
+                    <View style={styles.modernInputField}>
+                      <Text style={styles.modernLabel}>Weight (kg)</Text>
+                      <TextInput
+                        style={styles.modernInput}
+                        placeholder="Total weight"
+                        placeholderTextColor="#9CA3AF"
+                        value={catchWeight}
+                        onChangeText={setCatchWeight}
+                        keyboardType="decimal-pad"
+                      />
                     </View>
-                    <View style={styles.catchInputField}>
-                      <Text style={styles.catchInputLabel}>Location</Text>
-                      <View style={styles.catchInput}>
-                        <Text style={styles.catchInputPlaceholder}>Current GPS</Text>
-                        <Text style={styles.catchInputIcon}>📍</Text>
-                      </View>
+                    <View style={styles.modernInputField}>
+                      <Text style={styles.modernLabel}>Location</Text>
+                      <TouchableOpacity 
+                        style={styles.modernLocationInput}
+                        onPress={getCatchLocation}
+                        disabled={isGettingLocation}
+                      >
+                        {isGettingLocation ? (
+                          <ActivityIndicator size="small" color="#4A90E2" />
+                        ) : catchLocation ? (
+                          <Text style={styles.modernLocationText} numberOfLines={1}>{catchLocation}</Text>
+                        ) : (
+                          <Text style={styles.modernPlaceholder}>Current GPS</Text>
+                        )}
+                        <View style={styles.modernGPSDot} />
+                      </TouchableOpacity>
                     </View>
                   </View>
                 </View>
 
-                <View style={styles.catchQuickStats}>
-                  <View style={styles.quickStatItem}>
-                    <Text style={styles.quickStatLabel}>Today's Total</Text>
-                    <Text style={styles.quickStatValue}>12 fish</Text>
+                {/* Stats Section */}
+                <View style={styles.modernStatsContainer}>
+                  <View style={styles.modernStatItem}>
+                    <Text style={styles.modernStatLabel}>Today's Total</Text>
+                    <Text style={styles.modernStatValue}>12 fish</Text>
                   </View>
-                  <View style={styles.quickStatDivider} />
-                  <View style={styles.quickStatItem}>
-                    <Text style={styles.quickStatLabel}>This Week</Text>
-                    <Text style={styles.quickStatValue}>87 fish</Text>
+                  <View style={styles.modernStatDivider} />
+                  <View style={styles.modernStatItem}>
+                    <Text style={styles.modernStatLabel}>This Week</Text>
+                    <Text style={styles.modernStatValue}>87 fish</Text>
                   </View>
-                  <View style={styles.quickStatDivider} />
-                  <View style={styles.quickStatItem}>
-                    <Text style={styles.quickStatLabel}>Best Catch</Text>
-                    <Text style={styles.quickStatValue}>15.2 kg</Text>
+                  <View style={styles.modernStatDivider} />
+                  <View style={styles.modernStatItem}>
+                    <Text style={styles.modernStatLabel}>Best Catch</Text>
+                    <Text style={styles.modernStatValue}>15.2 kg</Text>
                   </View>
                 </View>
 
-                <TouchableOpacity style={styles.recordFishButton}>
-                  <Text style={styles.recordFishButtonIcon}>📝</Text>
-                  <Text style={styles.recordFishButtonText}>Record Fish Catch</Text>
+                {/* Submit Button */}
+                <TouchableOpacity 
+                  style={[styles.modernSubmitButton, isSubmitting && styles.modernSubmitButtonDisabled]}
+                  onPress={submitCatchRecord}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Text style={styles.modernButtonIcon}>📝</Text>
+                      <Text style={styles.modernButtonText}>Record Fish Catch</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
@@ -462,8 +817,18 @@ export default function App() {
           </>
         )}
 
+        {/* Record Catch Screen */}
+        {activeTab === 'RecordCatch' && (
+          <RecordCatchForm 
+            onSuccess={() => {
+              setActiveTab('Home');
+              Alert.alert('Success! 🎣', 'Your catch has been recorded successfully!');
+            }}
+          />
+        )}
+
         {/* Home/Dashboard Screen */}
-        {activeTab !== 'Profile' && activeTab !== 'Update' && activeTab !== 'Notifications' && (
+        {activeTab !== 'Profile' && activeTab !== 'Update' && activeTab !== 'Notifications' && activeTab !== 'RecordCatch' && (
           <>
         {/* Coins/Rewards Card */}
         <View style={styles.coinsCard}>
@@ -1168,12 +1533,34 @@ const styles = StyleSheet.create({
   recordCatchCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 20,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 3,
+  },
+  recordCatchBlueBanner: {
+    backgroundColor: '#4A90E2',
+    padding: 30,
+    paddingVertical: 40,
+    alignItems: 'center',
+    marginBottom: 0,
+  },
+  recordCatchBannerIcon: {
+    fontSize: 60,
+    marginBottom: 15,
+  },
+  recordCatchBannerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 8,
+  },
+  recordCatchBannerSubtitle: {
+    fontSize: 15,
+    color: '#E8F4FF',
+    textAlign: 'center',
   },
   recordCatchHeader: {
     flexDirection: 'row',
@@ -1202,6 +1589,8 @@ const styles = StyleSheet.create({
   },
   catchInputSection: {
     marginBottom: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   catchInputRow: {
     flexDirection: 'row',
@@ -1228,6 +1617,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
+  catchInputBox: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    fontSize: 14,
+    color: '#333',
+    minHeight: 45,
+  },
+  catchInputText: {
+    fontSize: 13,
+    color: '#333',
+  },
   catchInputPlaceholder: {
     fontSize: 14,
     color: '#999',
@@ -1244,6 +1647,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
+    marginHorizontal: 20,
   },
   quickStatItem: {
     alignItems: 'center',
@@ -1272,11 +1676,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 16,
     borderRadius: 12,
+    marginHorizontal: 20,
+    marginBottom: 20,
     shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 5,
+  },
+  recordFishButtonDisabled: {
+    backgroundColor: '#A5D6A7',
+    opacity: 0.7,
   },
   recordFishButtonIcon: {
     fontSize: 20,
@@ -1807,4 +2217,257 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#007bff',
   },
+  
+  // Record Catch Form Styles
+  recordCatchContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  recordCatchForm: {
+    padding: 20,
+  },
+  formGroup: {
+    marginBottom: 20,
+  },
+  formLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  formInput: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    color: '#333',
+  },
+  formTextArea: {
+    height: 100,
+    paddingTop: 12,
+  },
+  locationBox: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 8,
+    padding: 12,
+  },
+  locationLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  locationLoadingText: {
+    marginLeft: 10,
+    color: '#666',
+    fontSize: 14,
+  },
+  locationInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  locationText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
+  },
+  refreshLocationButton: {
+    padding: 5,
+  },
+  refreshLocationText: {
+    fontSize: 20,
+  },
+  getLocationButton: {
+    backgroundColor: '#4A90E2',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  getLocationButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  submitCatchButton: {
+    backgroundColor: '#4CAF50',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  submitCatchButtonDisabled: {
+    backgroundColor: '#A5D6A7',
+  },
+  submitCatchButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  
+  // Modern Card UI Styles
+  modernSectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
+  modernRecordCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 5,
+    overflow: 'hidden',
+  },
+  modernCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  modernHeaderIcon: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  modernHeaderText: {
+    flex: 1,
+  },
+  modernHeaderTitle: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  modernHeaderSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    lineHeight: 18,
+  },
+  modernFormGrid: {
+    padding: 20,
+    paddingBottom: 16,
+  },
+  modernInputRow: {
+    flexDirection: 'row',
+    gap: 14,
+    marginBottom: 14,
+  },
+  modernInputField: {
+    flex: 1,
+  },
+  modernLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  modernInput: {
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 11,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: '#111827',
+  },
+  modernLocationInput: {
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 11,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 46,
+  },
+  modernLocationText: {
+    fontSize: 14,
+    color: '#111827',
+    flex: 1,
+  },
+  modernPlaceholder: {
+    fontSize: 14,
+    color: '#9CA3AF',
+  },
+  modernGPSDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    marginLeft: 8,
+  },
+  modernStatsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#F3F4F6',
+    backgroundColor: '#FAFBFC',
+  },
+  modernStatItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  modernStatLabel: {
+    fontSize: 11,
+    color: '#6B7280',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  modernStatValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  modernStatDivider: {
+    width: 1,
+    backgroundColor: '#E5E7EB',
+    marginHorizontal: 12,
+  },
+  modernSubmitButton: {
+    backgroundColor: '#22C55E',
+    margin: 20,
+    paddingVertical: 15,
+    borderRadius: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  modernSubmitButtonDisabled: {
+    backgroundColor: '#86EFAC',
+    opacity: 0.6,
+  },
+  modernButtonIcon: {
+    fontSize: 18,
+    marginRight: 8,
+  },
+  modernButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
 });
+

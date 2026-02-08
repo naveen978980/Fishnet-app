@@ -1,0 +1,43 @@
+{
+  "catches": [
+    {
+      "id": "1770527934510",
+      "fishType": "Naveen",
+      "weight": 6461,
+      "length": 9966,
+      "location": "1-41, Chennai, Tamil Nadu",
+      "date": "2026-02-08",
+      "time": "10:56:17 am",
+      "image": null,
+      "notes": "It's very sbjs",
+      "createdAt": "2026-02-08T05:18:54.510Z",
+      "updatedAt": "2026-02-08T05:18:54.511Z"
+    },
+    {
+      "id": "1770528099483",
+      "fishType": "Nabsh",
+      "weight": 6564,
+      "length": null,
+      "location": "Lat: 13.044466, Long: 80.198918",
+      "date": "2026-02-08",
+      "time": "10:59:02 am",
+      "image": null,
+      "notes": "",
+      "createdAt": "2026-02-08T05:21:39.483Z",
+      "updatedAt": "2026-02-08T05:21:39.483Z"
+    },
+    {
+      "id": "1770528902635",
+      "fishType": "Sbs",
+      "weight": 9464,
+      "length": null,
+      "location": "Lat: 13.044494, Long: 80.199110",
+      "date": "2026-02-08",
+      "time": "11:12:25 am",
+      "image": null,
+      "notes": "",
+      "createdAt": "2026-02-08T05:35:02.635Z",
+      "updatedAt": "2026-02-08T05:35:02.635Z"
+    }
+  ]
+}
