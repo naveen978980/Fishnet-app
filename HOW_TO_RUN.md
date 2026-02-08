@@ -122,15 +122,7 @@ New-Item -Path .env -ItemType File
 # On Mac/Linux:
 touch .env
 ```
-
-Add the following content to `backend/.env`:
-
-```env
-MONGODB_URI=mongodb+srv://naveen1122005:Naveen112233@fishnet.abflie3.mongodb.net/fishnet
-JWT_SECRET=fishnet_secret_key_2026
-JWT_EXPIRE=30d
-PORT=3000
-```
+add env for run
 
 **⚠️ Important**: Never commit `.env` file to Git! It's already in `.gitignore`.
 
